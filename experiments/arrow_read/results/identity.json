@@ -1,0 +1,11 @@
+{
+  "bucket": "pourpoint-hfx",
+  "endpoint": "https://fsn1.your-objectstorage.com",
+  "prefix": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/",
+  "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+  "relative_path": "graph.parquet",
+  "size_bytes": 112610620,
+  "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+  "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+  "download_seconds": 4.215565541759133
+}
