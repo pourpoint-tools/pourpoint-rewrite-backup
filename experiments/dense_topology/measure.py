@@ -213,6 +213,9 @@ def main() -> None:
                     else "repeated; fresh query workspace"
                 )
                 timing["result_numpy_owned_bytes"] = result.nbytes
+                timing["correctness_arrays_retained_before_query_bytes"] = sum(
+                    array.nbytes for array in expected_results
+                ) + (0 if first is None else first.nbytes)
                 timings.append(timing)
                 selected = np.sort(result)
                 if first is None:
