@@ -9,8 +9,8 @@ No production engine code changes.
 
 Run from this directory with `uv sync --locked`, then `uv run pytest -q`,
 `uv run ruff check .`, `uv run ruff format --check .`, and
-`uv run ty check read_graph.py test_read_graph.py`. Explicit filenames ensure ty
-checks the experiment even when its worktree is below an ignored directory.
+`uv run ty check read_graph.py test_read_graph.py`. Explicit filenames avoid
+inherited root source filters and ignored-worktree discovery.
 The local ty source scope also makes bare `uv run ty check` inspect both files.
 Explicit-file type verification passes at `cc4b99d4898e2c1b63ea68811b662674e097721d`;
 the earlier bare command inherited the root source scope and did not verify this
