@@ -12,9 +12,10 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.lint.per-file-ignores]
-"read_graph.py" = ["E402"] # Deliberately time dependency imports.
+"read_graph.py" = ["E402"]
+"compare_download.py" = ["E402"] # Deliberately time dependency imports.
 [tool.pytest.ini_options]
 pythonpath = ["."]
 
 [tool.ty.src]
-include = ["read_graph.py", "test_read_graph.py"]
+include = ["read_graph.py", "test_read_graph.py", "compare_download.py", "test_compare_download.py"]

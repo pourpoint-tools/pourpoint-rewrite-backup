@@ -1,0 +1,27 @@
+[
+  {
+    "label": "A1",
+    "cwd": "/Users/nicolaslazaro/Desktop/work/pourpoint/.worktrees/graph-download-comparison/experiments/arrow_read",
+    "command": "uv run python compare_download.py native --reference /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins/graph.parquet --identity results/identity.json --commit 8a12603e6ab0e5fd0f8334d305a24378ea70cd4c --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/graph/A1.json --concurrent-activity 'exclusive graph experiment slot; no polygon timings or root scans; other laptop work unknown'"
+  },
+  {
+    "label": "B1",
+    "cwd": "/Users/nicolaslazaro/Desktop/work/pourpoint/.worktrees/graph-download-comparison/experiments/arrow_read",
+    "command": "uv run python compare_download.py download --reference /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins/graph.parquet --identity results/identity.json --commit 8a12603e6ab0e5fd0f8334d305a24378ea70cd4c --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/graph/B1.json --concurrent-activity 'exclusive graph experiment slot; no polygon timings or root scans; other laptop work unknown' --destination /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/downloads/B1-graph.parquet"
+  },
+  {
+    "label": "B2",
+    "cwd": "/Users/nicolaslazaro/Desktop/work/pourpoint/.worktrees/graph-download-comparison/experiments/arrow_read",
+    "command": "uv run python compare_download.py download --reference /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins/graph.parquet --identity results/identity.json --commit 8a12603e6ab0e5fd0f8334d305a24378ea70cd4c --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/graph/B2.json --concurrent-activity 'exclusive graph experiment slot; no polygon timings or root scans; other laptop work unknown' --destination /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/downloads/B2-graph.parquet"
+  },
+  {
+    "label": "A2",
+    "cwd": "/Users/nicolaslazaro/Desktop/work/pourpoint/.worktrees/graph-download-comparison/experiments/arrow_read",
+    "command": "uv run python compare_download.py native --reference /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins/graph.parquet --identity results/identity.json --commit 8a12603e6ab0e5fd0f8334d305a24378ea70cd4c --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/graph/A2.json --concurrent-activity 'exclusive graph experiment slot; no polygon timings or root scans; other laptop work unknown'"
+  },
+  {
+    "label": "C",
+    "cwd": "/Users/nicolaslazaro/Desktop/work/pourpoint/.worktrees/graph-download-comparison/experiments/arrow_read",
+    "command": "uv run python compare_download.py reuse --reference /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins/graph.parquet --identity results/identity.json --commit 8a12603e6ab0e5fd0f8334d305a24378ea70cd4c --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/graph/C.json --concurrent-activity 'exclusive graph experiment slot; no polygon timings or root scans; other laptop work unknown'"
+  }
+]

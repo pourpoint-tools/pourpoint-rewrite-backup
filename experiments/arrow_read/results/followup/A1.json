@@ -1,0 +1,125 @@
+{
+  "status": "ok",
+  "mode": "native",
+  "experiment_commit": "8a12603e6ab0e5fd0f8334d305a24378ea70cd4c",
+  "object_identity": {
+    "bucket": "pourpoint-hfx",
+    "endpoint": "https://fsn1.your-objectstorage.com",
+    "prefix": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/",
+    "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+    "relative_path": "graph.parquet",
+    "size_bytes": 112610620,
+    "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+    "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+    "download_seconds": 4.215565541759133
+  },
+  "source": "pourpoint-hfx/hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+  "reference": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins/graph.parquet",
+  "remote_before": {
+    "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+    "size_bytes": 112610620
+  },
+  "remote_after": {
+    "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+    "size_bytes": 112610620
+  },
+  "reference_sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+  "download_sha256": null,
+  "exact_graph_equality": true,
+  "equality_method": "post-ready array_equal ids/levels/offsets/edges and Arrow Table.equals",
+  "rows": 3786228,
+  "edges": 3504135,
+  "timings": {
+    "imports_seconds": 0.14950304199010134,
+    "setup_seconds": 0.05596837541088462,
+    "pre_read_identity_check_seconds": 0.4824564172886312,
+    "download_seconds": 0.0,
+    "open_footer_seconds": 1.2364711659029126,
+    "read_seconds": 119.17473133420572,
+    "compact_index_runtime_checks_seconds": 0.14962554071098566,
+    "compact_seconds": 7.879221811890602e-05,
+    "index_runtime_checks_seconds": 0.14952870830893517,
+    "load_total_seconds": 120.56082804081962,
+    "total_ready_seconds": 121.2542821248062
+  },
+  "process_peak_at_ready_bytes": 370900992,
+  "rss_at_ready_bytes": 370900992,
+  "peak_method": "process ru_maxrss captured at ready, before verification",
+  "arrow_live_at_ready_bytes": 81478464,
+  "arrow_pool_peak_at_ready_bytes": 205260288,
+  "buffers": {
+    "graph_referenced_bytes": 81478289,
+    "graph_retained_backing_bytes": 81478293,
+    "lookup_owned_bytes": 45434736,
+    "lookup_referenced_bytes": 45434736,
+    "parent_attribute_bytes": 0,
+    "locator_bytes": 0,
+    "numpy_graph_views_additional_owned_bytes": 0
+  },
+  "storage": {
+    "row_groups": 924,
+    "projected_compressed_column_chunk_bytes": 45485602
+  },
+  "downloaded_object_bytes": null,
+  "settings": {
+    "projection": [
+      "id",
+      "level",
+      "upstream_ids"
+    ],
+    "pre_buffer": true,
+    "use_threads": true,
+    "buffer_size": 0,
+    "memory_map": false,
+    "arrow_cpu_count": 8,
+    "arrow_io_thread_count": 8,
+    "arrow_s3": {
+      "connect_timeout_seconds": 10,
+      "request_timeout_seconds": 60,
+      "retry_strategy": "AwsStandardS3RetryStrategy",
+      "max_attempts": 3,
+      "force_virtual_addressing": false
+    },
+    "boto3": {
+      "profile": "hetzner-pourpoint",
+      "region": "fsn1",
+      "connect_timeout_seconds": 10,
+      "read_timeout_seconds": 60,
+      "retry_mode": "standard",
+      "total_max_attempts": 3,
+      "max_pool_connections": 10,
+      "addressing_style": "path"
+    },
+    "download": {
+      "method": "single sequential get_object StreamingBody.iter_chunks",
+      "chunk_bytes": 8388608,
+      "transfer_manager": false,
+      "destination_creation": "exclusive xb",
+      "fsync": false
+    }
+  },
+  "versions": {
+    "pyarrow": "25.0.1",
+    "numpy": "2.5.3",
+    "psutil": "7.2.2",
+    "boto3": "1.43.108",
+    "botocore": "1.43.108"
+  },
+  "python": "3.14.6",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "state": "fresh process; new destination for download; OS/remote cache uncontrolled",
+  "concurrent_activity": "exclusive graph experiment slot; no polygon timings or root scans; other laptop work unknown",
+  "remote_requests": "not measured",
+  "remote_response_bytes": "not measured",
+  "actual_retries": "not measured",
+  "excluded": [
+    "interpreter startup",
+    "post-ready identity/equality checks",
+    "traversal",
+    "parents",
+    "catchment locator",
+    "geometry",
+    "snap",
+    "rasters"
+  ]
+}
