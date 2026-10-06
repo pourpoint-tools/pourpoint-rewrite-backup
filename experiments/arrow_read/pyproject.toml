@@ -15,3 +15,6 @@ select = ["E", "F", "I", "UP", "B"]
 "read_graph.py" = ["E402"] # Deliberately time dependency imports.
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.ty.src]
+include = ["read_graph.py", "test_read_graph.py"]
