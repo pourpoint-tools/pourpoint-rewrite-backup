@@ -1,0 +1,35 @@
+{
+  "tests": {
+    "command": "uv run --project experiments/selective_access pytest experiments/selective_access -q",
+    "green": "23 passed",
+    "red_cases": [
+      {
+        "case": "initial selective import before implementation",
+        "status": "failed",
+        "observed": "ModuleNotFoundError: No module named selective"
+      },
+      {
+        "case": "snap fallback before implementation",
+        "status": "failed",
+        "observed": "10 failed (membership expectations added before fallback)"
+      },
+      {
+        "case": "driver missing optional snap bbox",
+        "status": "failed",
+        "observed": "KeyError: Field bbox does not exist in schema; 1 failed, 1 passed"
+      }
+    ]
+  },
+  "lint": "Ruff check passed",
+  "types": "ty explicit six Python files passed",
+  "development_failed_configuration": {
+    "status": "failed",
+    "settings": {
+      "batch_readahead": 0,
+      "fragment_readahead": 0,
+      "use_threads": false
+    },
+    "observed": "tiny pytest produced no output and was manually terminated after approximately 80 seconds; no performance result"
+  },
+  "native_evidence": "raw pytest and validation logs retained outside Git in coordinator session artifacts outputs/selective_access/"
+}
