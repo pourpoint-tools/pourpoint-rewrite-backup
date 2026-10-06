@@ -38,7 +38,8 @@ settings, query inputs, buffer accounting, and observed concurrent work.
 ## Comparison
 
 The [machine-readable summary](results/comparison.json) links each value to its
-saved run. Seconds are rounded here. Reader rows show both observed runs. Topology and selective rows use the isolated
+saved run. Seconds are rounded here. Reader cells list run 1 / run 2; Baseline
+is serial and Comparison is prefetch. Topology and selective rows use the isolated
 local runs. “Ordinary” and “largest” refer to the selected existing geometry groups,
 not newly extracted datasets.
 
