@@ -90,13 +90,16 @@ Both boto3 and native Arrow S3 use 10-second connection timeouts, 60-second read
 (request for Arrow) timeouts, standard retries with at most three attempts, region
 `fsn1`, and the endpoint/profile in the records. Boto3 uses path addressing and
 10 pooled connections; native Arrow disables forced virtual addressing. Arrow
-CPU and I/O thread counts are both set to 8. All reads use `pre_buffer=True`,
+CPU and I/O thread counts are both set to 8 (the earlier motivating records used
+16 CPU threads, so these are not identical settings to that prior evidence). All reads use `pre_buffer=True`,
 `use_threads=True`, `buffer_size=0`, and `memory_map=False`.
 
 Total-ready time starts immediately before driver imports. It includes imports,
 argument/input parsing, client/filesystem setup, pre-read remote identity HEAD,
-download where applicable, footer/read, compaction, and the same numeric lookup
-and runtime checks. Interpreter startup is excluded. Download time includes GET,
+download where applicable, footer/read, compaction, the same numeric lookup
+and runtime checks, and compressed-column metadata size accounting before the
+reader returns. The compact/index/check timer excludes that final metadata
+accounting; total-ready includes it. Interpreter startup is excluded. Download time includes GET,
 streaming writes, and file close; the following local read may use the OS cache.
 The process peak (`ru_maxrss`, platform-converted bytes), RSS, and Arrow allocation
 counters are captured at ready, before any verification. Reported graph buffers
