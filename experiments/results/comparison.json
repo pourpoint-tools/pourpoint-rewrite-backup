@@ -1,0 +1,217 @@
+{
+  "dataset_receipt": "results/hydrobasins-download.json",
+  "units": {
+    "elapsed": "seconds",
+    "memory": "bytes"
+  },
+  "source_records": {
+    "topology_commit": "422babb3fb4c89dc623eaaa808f03653dd42bd43",
+    "selective_commit": "5198b1690543e32feb0b2d4842f8fd016cbddad4"
+  },
+  "topology": [
+    {
+      "mode": "id",
+      "source": "dense_topology/results/id-isolated.json",
+      "query_id": 6120007000,
+      "selected_count": 44962,
+      "load_seconds": 0.05688154185190797,
+      "index_seconds": 0.1508391252718866,
+      "conversion_seconds": "not applicable",
+      "first_query_seconds": 0.048507374711334705,
+      "repeated_query_median_seconds": 0.047225458081811666,
+      "calculation": "median of timings[1:] (five repeated queries)",
+      "ready_rss_bytes": 402292736
+    },
+    {
+      "mode": "dense",
+      "source": "dense_topology/results/dense-isolated.json",
+      "query_id": 6120007000,
+      "selected_count": 44962,
+      "load_seconds": 0.05583679070696235,
+      "index_seconds": 0.15100775007158518,
+      "conversion_seconds": 0.06538879219442606,
+      "first_query_seconds": 0.01637354213744402,
+      "repeated_query_median_seconds": 0.015996874775737524,
+      "calculation": "median of timings[1:] (five repeated queries)",
+      "ready_rss_bytes": 420462592
+    }
+  ],
+  "selective": [
+    {
+      "kind": "polygon",
+      "label": "ordinary_geometry_group",
+      "method": "filtered",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 209,
+      "candidate_rows": 856422,
+      "selected_rows": 3,
+      "read_filter_seconds": 0.3459150833077729,
+      "decoded_geometry_count": 3
+    },
+    {
+      "kind": "polygon",
+      "label": "ordinary_geometry_group",
+      "method": "explicit_groups",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 1,
+      "candidate_rows": 4098,
+      "selected_rows": 3,
+      "read_filter_seconds": 0.006680374965071678,
+      "decoded_geometry_count": 3
+    },
+    {
+      "kind": "polygon",
+      "label": "largest_geometry_group",
+      "method": "filtered",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 94,
+      "candidate_rows": 385188,
+      "selected_rows": 3,
+      "read_filter_seconds": 0.19368616631254554,
+      "decoded_geometry_count": 3
+    },
+    {
+      "kind": "polygon",
+      "label": "largest_geometry_group",
+      "method": "explicit_groups",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 1,
+      "candidate_rows": 4098,
+      "selected_rows": 3,
+      "read_filter_seconds": 0.1387428748421371,
+      "decoded_geometry_count": 3
+    },
+    {
+      "kind": "snap",
+      "label": "ordinary_geometry_group",
+      "method": "filtered",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 3,
+      "candidate_rows": 12291,
+      "selected_rows": 9,
+      "read_filter_seconds": 0.16842120792716742,
+      "decoded_geometry_count": 9
+    },
+    {
+      "kind": "snap",
+      "label": "ordinary_geometry_group",
+      "method": "explicit_groups",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 3,
+      "candidate_rows": 12291,
+      "selected_rows": 9,
+      "read_filter_seconds": 0.12056558299809694,
+      "decoded_geometry_count": 9
+    },
+    {
+      "kind": "snap",
+      "label": "largest_geometry_group",
+      "method": "filtered",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 2,
+      "candidate_rows": 8196,
+      "selected_rows": 10,
+      "read_filter_seconds": 0.19550966704264283,
+      "decoded_geometry_count": 10
+    },
+    {
+      "kind": "snap",
+      "label": "largest_geometry_group",
+      "method": "explicit_groups",
+      "source": "selective_access/results/hydrobasins-isolated.json",
+      "repeat": 0,
+      "candidate_groups": 2,
+      "candidate_rows": 8196,
+      "selected_rows": 10,
+      "read_filter_seconds": 0.1328443749807775,
+      "decoded_geometry_count": 10
+    }
+  ],
+  "attribute_only": {
+    "rows": 3786228,
+    "attribute_load_seconds": 0.0777687500230968,
+    "locator_build_seconds": 0.14799541607499123,
+    "buffers": {
+      "parent_level_attributes": {
+        "logical_bytes": 53953750,
+        "retained_backing_bytes": 53953750
+      },
+      "catchment_id_column": {
+        "logical_bytes": 30289824,
+        "retained_backing_bytes": 30289824
+      },
+      "locator_numpy_owned_bytes": 60587040,
+      "locator_numpy_arrays": {
+        "sorted_ids": 30289824,
+        "row_positions": 30289824,
+        "group_ends": 7392
+      },
+      "locator_temporary_peak_bytes": "not measured",
+      "graph": "excluded",
+      "graph_lookup": "excluded"
+    },
+    "source": "selective_access/results/hydrobasins-isolated.json"
+  },
+  "selective_process_lifetime_peak_rss_bytes": 4920311808,
+  "reader": [
+    {
+      "state": "local",
+      "mode": "serial",
+      "source_records": [
+        "arrow_read/results/local-serial-1.json",
+        "arrow_read/results/local-serial-2.json"
+      ],
+      "read_seconds": [
+        0.29062649980187416,
+        0.07170362491160631
+      ],
+      "experiment_commit": "05b72f2fb30f41fc612605496367de26eb8d3559"
+    },
+    {
+      "state": "local",
+      "mode": "prefetch",
+      "source_records": [
+        "arrow_read/results/local-prefetch-1.json",
+        "arrow_read/results/local-prefetch-2.json"
+      ],
+      "read_seconds": [
+        0.06418170826509595,
+        0.06963245803490281
+      ],
+      "experiment_commit": "05b72f2fb30f41fc612605496367de26eb8d3559"
+    },
+    {
+      "state": "remote",
+      "mode": "serial",
+      "source_records": [
+        "arrow_read/results/remote-serial-1.json",
+        "arrow_read/results/remote-serial-2.json"
+      ],
+      "read_seconds": [
+        383.13999854167923,
+        366.57725687511265
+      ],
+      "experiment_commit": "05b72f2fb30f41fc612605496367de26eb8d3559"
+    },
+    {
+      "state": "remote",
+      "mode": "prefetch",
+      "source_records": [
+        "arrow_read/results/remote-prefetch-1.json",
+        "arrow_read/results/remote-prefetch-2.json"
+      ],
+      "read_seconds": [
+        128.9886312908493,
+        111.92388625023887
+      ],
+      "experiment_commit": "05b72f2fb30f41fc612605496367de26eb8d3559"
+    }
+  ]
+}

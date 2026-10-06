@@ -1,0 +1,69 @@
+{
+  "bucket": "pourpoint-hfx",
+  "endpoint": "https://fsn1.your-objectstorage.com",
+  "prefix": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/",
+  "started_utc": "2026-10-06T19:08:34.438210+00:00",
+  "objects": [
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+      "relative_path": "graph.parquet",
+      "size_bytes": 112610620,
+      "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+      "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+      "download_seconds": 4.215565541759133
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/validation/validator-report.text",
+      "relative_path": "validation/validator-report.text",
+      "size_bytes": 51,
+      "etag": "\"7d862d2f611336f3fa8fe442502f7f28\"",
+      "sha256": "77d45ecbe7a7b60320979bd4f7b6670b5ef21197455e419994960ae869d28a87",
+      "download_seconds": 0.3715156251564622
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/validation/validator-report.json",
+      "relative_path": "validation/validator-report.json",
+      "size_bytes": 102,
+      "etag": "\"98c1dc1559f25384fb991568877970cc\"",
+      "sha256": "5b0ad03a4aaa71a6fd611e2d3a4ece1fda47024a419124c648b347da25fef31e",
+      "download_seconds": 0.3169890409335494
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/manifest.json",
+      "relative_path": "manifest.json",
+      "size_bytes": 1848,
+      "etag": "\"0705d81e8353441dd021236cc76c8fb1\"",
+      "sha256": "81da3c17b070b80933dfd1d4e90fc9166f7f6fefedde109c1f43fe0aad1bd954",
+      "download_seconds": 0.2951499158516526
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/ATTRIBUTION_AND_PROVENANCE.txt",
+      "relative_path": "ATTRIBUTION_AND_PROVENANCE.txt",
+      "size_bytes": 5207,
+      "etag": "\"a95c1874cc533f35850cc67795bfc29e\"",
+      "sha256": "4ea6f03655f61d94d7185c05df9a0b2c60c52354841017a8186f99bf7d77474f",
+      "download_seconds": 0.29513549990952015
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/aux/snap_stems.parquet",
+      "relative_path": "aux/snap_stems.parquet",
+      "size_bytes": 514474930,
+      "etag": "\"fa82a76f97691d9cad3fc48010168485-62\"",
+      "sha256": "96163fe69efd7ba3dc8bc299680f48545aa0ca3d71ebf350545962084d9953ff",
+      "download_seconds": 15.129734375048429
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/catchments.parquet",
+      "relative_path": "catchments.parquet",
+      "size_bytes": 3703151810,
+      "etag": "\"f0d7c2757972a7d921e3ec703f0860a7-442\"",
+      "sha256": "b182cc56d761e2ab4064aa6aaf0883c4a64f5e2951b7ee9982a2e261f52f5bb9",
+      "download_seconds": 118.95706770895049
+    }
+  ],
+  "wire_requests": "not measured",
+  "wire_response_bytes": "not measured",
+  "method": "sequential streaming full-object GET IfMatch; initial acquisition separate from local experiment reads",
+  "elapsed_seconds": 139.58793087489903,
+  "completed_utc": "2026-10-06T19:10:54.027369+00:00"
+}
