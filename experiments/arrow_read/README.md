@@ -74,3 +74,48 @@ Pinned investigation evidence: HFX specification at
 `CooperBigFoot/pourpoint@60e3d6e383546ea6ed20e68fe4d77959c816a48c`:
 `reader/graph.rs`, `algo/upstream.rs`, `session.rs`. The old graph uses per-node
 vectors and whole encoded remote artifacts. This experiment does neither.
+
+## Full download follow-up
+
+`compare_download.py` compares native Arrow S3 projection with a fresh, complete
+`graph.parquet` download followed by the same local projection and `Graph` index.
+Run each command in a fresh process. The paired order is A1 native, B1 download,
+B2 download to a new path, A2 native. C measures existing-local reuse separately.
+See [follow-up results](FOLLOWUP.md) and `results/followup/commands.json`.
+
+The download uses one boto3 `get_object`, sequential `StreamingBody.iter_chunks`
+with 8 MiB chunks, no transfer manager, exclusive destination creation, and file
+close without fsync. It does not retain the complete encoded object in memory.
+Both boto3 and native Arrow S3 use 10-second connection timeouts, 60-second read
+(request for Arrow) timeouts, standard retries with at most three attempts, region
+`fsn1`, and the endpoint/profile in the records. Boto3 uses path addressing and
+10 pooled connections; native Arrow disables forced virtual addressing. Arrow
+CPU and I/O thread counts are both set to 8. All reads use `pre_buffer=True`,
+`use_threads=True`, `buffer_size=0`, and `memory_map=False`.
+
+Total-ready time starts immediately before driver imports. It includes imports,
+argument/input parsing, client/filesystem setup, pre-read remote identity HEAD,
+download where applicable, footer/read, compaction, and the same numeric lookup
+and runtime checks. Interpreter startup is excluded. Download time includes GET,
+streaming writes, and file close; the following local read may use the OS cache.
+The process peak (`ru_maxrss`, platform-converted bytes), RSS, and Arrow allocation
+counters are captured at ready, before any verification. Reported graph buffers
+exclude the post-ready comparison graph.
+
+After readiness, a second HEAD checks remote ETag and size; SHA256 checks the
+shared original and each fresh download against the recorded original artifact.
+Every measured graph is compared with that original using exact ordered IDs,
+levels, adjacency offsets and values, plus Arrow `Table.equals`. This verification
+allocates a second graph only after the timed readiness memory snapshot. No
+traversal, parents, geometry, snap, or full conformance validation is measured.
+Object bytes and compressed column-chunk bytes are storage counts, not wire
+traffic. Requests, response bytes, and actual retries are **not measured**.
+
+Validation:
+
+```sh
+uv run pytest -q
+uv run ruff check read_graph.py test_read_graph.py compare_download.py test_compare_download.py
+uv run ruff format --check read_graph.py test_read_graph.py compare_download.py test_compare_download.py
+uv run ty check read_graph.py test_read_graph.py compare_download.py test_compare_download.py
+```
