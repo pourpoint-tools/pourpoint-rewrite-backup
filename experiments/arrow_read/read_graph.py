@@ -152,9 +152,10 @@ def reference_upstream(table: pa.Table, unit_id: int) -> IntArray:
     """Independent vectorized frontier expansion; no numeric lookup or CSR traversal."""
     selected = pa.array([unit_id], type=pa.int64())
     while True:
-        rows = table.filter(pc.is_in(table["id"], value_set=selected))
-        edges = pc.list_flatten(rows["upstream_ids"]).combine_chunks()
-        expanded = pc.unique(pa.concat_arrays([selected, edges]))
+        # Arrow registers these compute functions dynamically; ty cannot see their attributes.
+        rows = table.filter(pc.is_in(table["id"], value_set=selected))  # ty: ignore[unresolved-attribute]
+        edges = pc.list_flatten(rows["upstream_ids"]).combine_chunks()  # ty: ignore[unresolved-attribute]
+        expanded = pc.unique(pa.concat_arrays([selected, edges]))  # ty: ignore[unresolved-attribute]
         if len(expanded) == len(selected):
             return np.sort(expanded.to_numpy())
         selected = expanded
