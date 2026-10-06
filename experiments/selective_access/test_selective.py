@@ -78,3 +78,21 @@ def test_duplicate_ids_rejected(tmp_path: Path) -> None:
 def test_retained_backing() -> None:
     table = pa.table({"x": np.arange(100, dtype=np.int64)}).slice(0, 1)
     assert buffers(table) == {"logical_bytes": 8, "retained_backing_bytes": 800}
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_retains_selected_decoded_outputs(catchments: Path, explicit: bool) -> None:
+    from shapely.geometry.base import BaseGeometry
+
+    retained: list[BaseGeometry] = []
+    table, metrics = polygons(
+        catchments,
+        Locator.load(catchments),
+        [3, 901],
+        explicit,
+        retain_decoded=retained,
+    )
+    assert len(retained) == metrics["decoded_geometry_count"] == 2
+    expected = {3: box(3, 0, 4, 1), 901: box(0, 0, 1, 1)}
+    for identity, geometry in zip(table["id"].to_pylist(), retained, strict=True):
+        assert geometry.equals_exact(expected[identity], tolerance=0)

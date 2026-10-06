@@ -11,6 +11,7 @@ import pyarrow.compute as pc
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 import shapely
+from shapely.geometry.base import BaseGeometry
 
 
 def buffers(table: pa.Table) -> dict[str, int]:
@@ -105,7 +106,12 @@ def wkb_bytes(table: pa.Table) -> int:
 
 
 def polygons(
-    path: Path, locator: Locator, ids: list[int], explicit_groups: bool
+    path: Path,
+    locator: Locator,
+    ids: list[int],
+    explicit_groups: bool,
+    *,
+    retain_decoded: list[BaseGeometry] | None = None,
 ) -> tuple[pa.Table, dict[str, object]]:
     start = perf_counter()
     groups = locator.groups(ids)  # Missing IDs fail before either reader.
@@ -149,7 +155,9 @@ def polygons(
     decode_start = perf_counter()
     decoded = 0
     for value in table["geometry"]:
-        shapely.from_wkb(value.as_py())
+        geometry = shapely.from_wkb(value.as_py())
+        if retain_decoded is not None:
+            retain_decoded.append(geometry)
         decoded += 1
     return table, {
         "read_filter_seconds": read_seconds,
