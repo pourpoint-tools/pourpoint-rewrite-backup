@@ -1,0 +1,792 @@
+{
+  "dataset_receipt": {
+    "bucket": "pourpoint-hfx",
+    "endpoint": "https://fsn1.your-objectstorage.com",
+    "prefix": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/",
+    "started_utc": "2026-10-06T19:08:34.438210+00:00",
+    "objects": [
+      {
+        "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+        "relative_path": "graph.parquet",
+        "size_bytes": 112610620,
+        "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+        "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+        "download_seconds": 4.215565541759133
+      },
+      {
+        "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/validation/validator-report.text",
+        "relative_path": "validation/validator-report.text",
+        "size_bytes": 51,
+        "etag": "\"7d862d2f611336f3fa8fe442502f7f28\"",
+        "sha256": "77d45ecbe7a7b60320979bd4f7b6670b5ef21197455e419994960ae869d28a87",
+        "download_seconds": 0.3715156251564622
+      },
+      {
+        "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/validation/validator-report.json",
+        "relative_path": "validation/validator-report.json",
+        "size_bytes": 102,
+        "etag": "\"98c1dc1559f25384fb991568877970cc\"",
+        "sha256": "5b0ad03a4aaa71a6fd611e2d3a4ece1fda47024a419124c648b347da25fef31e",
+        "download_seconds": 0.3169890409335494
+      },
+      {
+        "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/manifest.json",
+        "relative_path": "manifest.json",
+        "size_bytes": 1848,
+        "etag": "\"0705d81e8353441dd021236cc76c8fb1\"",
+        "sha256": "81da3c17b070b80933dfd1d4e90fc9166f7f6fefedde109c1f43fe0aad1bd954",
+        "download_seconds": 0.2951499158516526
+      },
+      {
+        "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/ATTRIBUTION_AND_PROVENANCE.txt",
+        "relative_path": "ATTRIBUTION_AND_PROVENANCE.txt",
+        "size_bytes": 5207,
+        "etag": "\"a95c1874cc533f35850cc67795bfc29e\"",
+        "sha256": "4ea6f03655f61d94d7185c05df9a0b2c60c52354841017a8186f99bf7d77474f",
+        "download_seconds": 0.29513549990952015
+      },
+      {
+        "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/aux/snap_stems.parquet",
+        "relative_path": "aux/snap_stems.parquet",
+        "size_bytes": 514474930,
+        "etag": "\"fa82a76f97691d9cad3fc48010168485-62\"",
+        "sha256": "96163fe69efd7ba3dc8bc299680f48545aa0ca3d71ebf350545962084d9953ff",
+        "download_seconds": 15.129734375048429
+      },
+      {
+        "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/catchments.parquet",
+        "relative_path": "catchments.parquet",
+        "size_bytes": 3703151810,
+        "etag": "\"f0d7c2757972a7d921e3ec703f0860a7-442\"",
+        "sha256": "b182cc56d761e2ab4064aa6aaf0883c4a64f5e2951b7ee9982a2e261f52f5bb9",
+        "download_seconds": 118.95706770895049
+      }
+    ],
+    "wire_requests": "not measured",
+    "wire_response_bytes": "not measured",
+    "method": "sequential streaming full-object GET IfMatch; initial acquisition separate from local experiment reads",
+    "elapsed_seconds": 139.58793087489903,
+    "completed_utc": "2026-10-06T19:10:54.027369+00:00"
+  },
+  "versions": {
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "shapely": "2.1.2",
+    "psutil": "7.2.2"
+  },
+  "python": "3.14.6",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "settings": {
+    "pre_buffer": true,
+    "use_threads": false,
+    "batch_readahead": 1,
+    "fragment_readahead": 1,
+    "projection": [
+      "id",
+      "geometry"
+    ]
+  },
+  "state": "fresh process; immutable existing local bundle; OS cache uncontrolled; no prior geometry read in process",
+  "concurrent_activity": "No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown",
+  "retention_scope": "locator attributes and arrays, selected Arrow table, and all selected decoded Shapely geometries remain live at READY; candidate table no longer live",
+  "decoded_native_buffer_bytes": "not measured",
+  "code_commit": "946e989b7cd98db8ebf0d11180ceaf113a8aecfc",
+  "runs": [
+    {
+      "sequence": 1,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection ordinary --method filtered --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/01-ordinary-filtered.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/01-ordinary-filtered.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:51:25.045624+00:00",
+      "selection": "ordinary",
+      "query_ids": [3110936770, 3110689390, 4110131420],
+      "source_group": 580,
+      "source_group_geometry_compressed_bytes": 2924951,
+      "method": "filtered",
+      "initial_memory": {
+        "rss_bytes": 70696960,
+        "process_reported_peak_rss_bytes": 70696960,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.02346770791336894,
+      "preparation_seconds": 0.22680216701701283,
+      "attribute_load_seconds": 0.07746508391574025,
+      "locator_build_seconds": 0.14792266581207514,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 391348224,
+        "process_reported_peak_rss_bytes": 391348224,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.31912954105064273,
+      "ready_memory": {
+        "rss_bytes": 3543695360,
+        "process_reported_peak_rss_bytes": 3543695360,
+        "arrow_current_allocated_bytes": 84261568,
+        "arrow_pool_peak_bytes": 2114586112,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.56977454200387,
+      "metrics": {
+        "read_filter_seconds": 0.3162520406767726,
+        "decode_seconds": 0.000177083071321249,
+        "candidate_group_ids": [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 33, 34, 35, 39, 40, 41, 42, 43, 48, 49, 52, 53, 56, 57, 58, 64, 77, 79, 103, 105, 108, 119, 122, 123, 124, 125, 128, 129, 142, 143, 145, 146, 153, 155, 156, 163, 166, 168, 184, 212, 214, 256, 258, 260, 266, 288, 293, 294, 298, 299, 304, 305, 306, 307, 331, 332, 334, 336, 337, 338, 339, 350, 351, 354, 355, 356, 370, 376, 378, 379, 380, 409, 444, 447, 492, 493, 494, 496, 503, 527, 528, 529, 530, 531, 532, 533, 534, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 566, 567, 568, 569, 570, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 623, 624, 626, 627, 628, 660, 696, 699, 744, 745, 746, 748, 755, 779, 785, 786, 790, 791, 792, 797, 798, 799, 800, 819, 822, 823, 824, 825, 826, 827, 830, 832, 833, 834, 835, 848, 849, 852, 853, 854, 880, 912],
+        "candidate_groups": 209,
+        "candidate_rows": 856422,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": "not measured",
+        "selected_wkb_bytes": 4253,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": "not measured",
+        "query_buffers": {
+          "logical_bytes": 4291,
+          "retained_backing_bytes": 5127
+        },
+        "candidate_column_chunks_compressed_bytes": 1177229214,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/01-ordinary-filtered.arrow"
+    },
+    {
+      "sequence": 2,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection ordinary --method explicit_groups --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/02-ordinary-explicit_groups.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/02-ordinary-explicit_groups.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:51:35.496204+00:00",
+      "selection": "ordinary",
+      "query_ids": [3110936770, 3110689390, 4110131420],
+      "source_group": 580,
+      "source_group_geometry_compressed_bytes": 2924951,
+      "method": "explicit_groups",
+      "initial_memory": {
+        "rss_bytes": 71057408,
+        "process_reported_peak_rss_bytes": 71057408,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.02281908318400383,
+      "preparation_seconds": 0.22439170768484473,
+      "attribute_load_seconds": 0.07445945916697383,
+      "locator_build_seconds": 0.14875141624361277,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 392790016,
+        "process_reported_peak_rss_bytes": 392790016,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.010267958045005798,
+      "ready_memory": {
+        "rss_bytes": 404733952,
+        "process_reported_peak_rss_bytes": 404733952,
+        "arrow_current_allocated_bytes": 84248192,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.2578368750400841,
+      "metrics": {
+        "read_filter_seconds": 0.01003574999049306,
+        "decode_seconds": 0.00010399986058473587,
+        "candidate_group_ids": [580],
+        "candidate_groups": 1,
+        "candidate_rows": 4098,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": 5227386,
+        "selected_wkb_bytes": 4253,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": {
+          "logical_bytes": 5276562,
+          "retained_backing_bytes": 5276566
+        },
+        "query_buffers": {
+          "logical_bytes": 4290,
+          "retained_backing_bytes": 4294
+        },
+        "candidate_column_chunks_compressed_bytes": 2949496,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/02-ordinary-explicit_groups.arrow"
+    },
+    {
+      "sequence": 3,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection largest --method filtered --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/03-largest-filtered.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/03-largest-filtered.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:51:45.873380+00:00",
+      "selection": "largest",
+      "query_ids": [6010000010, 6050010520, 2050067280],
+      "source_group": 0,
+      "source_group_geometry_compressed_bytes": 169966246,
+      "method": "filtered",
+      "initial_memory": {
+        "rss_bytes": 71303168,
+        "process_reported_peak_rss_bytes": 71303168,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.022474042139947414,
+      "preparation_seconds": 0.22675729170441628,
+      "attribute_load_seconds": 0.07334083411842585,
+      "locator_build_seconds": 0.1520480839535594,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 391086080,
+        "process_reported_peak_rss_bytes": 391086080,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.2613036660477519,
+      "ready_memory": {
+        "rss_bytes": 3264446464,
+        "process_reported_peak_rss_bytes": 3264446464,
+        "arrow_current_allocated_bytes": 86709824,
+        "arrow_pool_peak_bytes": 1981323712,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.5109665831550956,
+      "metrics": {
+        "read_filter_seconds": 0.25757458433508873,
+        "decode_seconds": 0.001896000001579523,
+        "candidate_group_ids": [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 13, 17, 19, 23, 24, 33, 34, 35, 38, 39, 44, 58, 64, 66, 77, 79, 103, 104, 105, 108, 115, 116, 117, 118, 132, 133, 168, 169, 184, 190, 212, 214, 256, 258, 260, 266, 280, 281, 282, 283, 286, 312, 314, 380, 409, 419, 444, 447, 492, 493, 494, 496, 503, 519, 520, 521, 524, 553, 554, 555, 628, 629, 660, 671, 696, 699, 744, 745, 746, 747, 748, 755, 771, 772, 773, 774, 776, 777, 805, 806, 807, 880, 881, 912],
+        "candidate_groups": 94,
+        "candidate_rows": 385188,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": "not measured",
+        "selected_wkb_bytes": 2459871,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": "not measured",
+        "query_buffers": {
+          "logical_bytes": 2459909,
+          "retained_backing_bytes": 2460285
+        },
+        "candidate_column_chunks_compressed_bytes": 750415155,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/03-largest-filtered.arrow"
+    },
+    {
+      "sequence": 4,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection largest --method explicit_groups --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/04-largest-explicit_groups.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/04-largest-explicit_groups.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:51:51.155290+00:00",
+      "selection": "largest",
+      "query_ids": [6010000010, 6050010520, 2050067280],
+      "source_group": 0,
+      "source_group_geometry_compressed_bytes": 169966246,
+      "method": "explicit_groups",
+      "initial_memory": {
+        "rss_bytes": 69828608,
+        "process_reported_peak_rss_bytes": 69828608,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.023799499962478876,
+      "preparation_seconds": 0.23650200013071299,
+      "attribute_load_seconds": 0.07705558277666569,
+      "locator_build_seconds": 0.15593779226765037,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 391921664,
+        "process_reported_peak_rss_bytes": 391921664,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.25449120812118053,
+      "ready_memory": {
+        "rss_bytes": 1502609408,
+        "process_reported_peak_rss_bytes": 1502609408,
+        "arrow_current_allocated_bytes": 86703808,
+        "arrow_pool_peak_bytes": 978462464,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.5153231667354703,
+      "metrics": {
+        "read_filter_seconds": 0.2523313332349062,
+        "decode_seconds": 0.0019654161296784878,
+        "candidate_group_ids": [0],
+        "candidate_groups": 1,
+        "candidate_rows": 4098,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": 245517161,
+        "selected_wkb_bytes": 2459871,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": {
+          "logical_bytes": 245566337,
+          "retained_backing_bytes": 245566341
+        },
+        "query_buffers": {
+          "logical_bytes": 2459908,
+          "retained_backing_bytes": 2459912
+        },
+        "candidate_column_chunks_compressed_bytes": 169991909,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/04-largest-explicit_groups.arrow"
+    },
+    {
+      "sequence": 5,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection largest --method explicit_groups --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/05-largest-explicit_groups.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/05-largest-explicit_groups.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:51:59.560072+00:00",
+      "selection": "largest",
+      "query_ids": [6010000010, 6050010520, 2050067280],
+      "source_group": 0,
+      "source_group_geometry_compressed_bytes": 169966246,
+      "method": "explicit_groups",
+      "initial_memory": {
+        "rss_bytes": 72728576,
+        "process_reported_peak_rss_bytes": 72728576,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.024231791030615568,
+      "preparation_seconds": 0.22619512537494302,
+      "attribute_load_seconds": 0.076280000153929,
+      "locator_build_seconds": 0.14870983408764005,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 393347072,
+        "process_reported_peak_rss_bytes": 393347072,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.18897129176184535,
+      "ready_memory": {
+        "rss_bytes": 1504362496,
+        "process_reported_peak_rss_bytes": 1504362496,
+        "arrow_current_allocated_bytes": 86703808,
+        "arrow_pool_peak_bytes": 978462464,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.4398092911578715,
+      "metrics": {
+        "read_filter_seconds": 0.18676370894536376,
+        "decode_seconds": 0.002027790993452072,
+        "candidate_group_ids": [0],
+        "candidate_groups": 1,
+        "candidate_rows": 4098,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": 245517161,
+        "selected_wkb_bytes": 2459871,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": {
+          "logical_bytes": 245566337,
+          "retained_backing_bytes": 245566341
+        },
+        "query_buffers": {
+          "logical_bytes": 2459908,
+          "retained_backing_bytes": 2459912
+        },
+        "candidate_column_chunks_compressed_bytes": 169991909,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/05-largest-explicit_groups.arrow"
+    },
+    {
+      "sequence": 6,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection largest --method filtered --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/06-largest-filtered.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/06-largest-filtered.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:52:09.370504+00:00",
+      "selection": "largest",
+      "query_ids": [6010000010, 6050010520, 2050067280],
+      "source_group": 0,
+      "source_group_geometry_compressed_bytes": 169966246,
+      "method": "filtered",
+      "initial_memory": {
+        "rss_bytes": 71483392,
+        "process_reported_peak_rss_bytes": 71483392,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.0237935408949852,
+      "preparation_seconds": 0.23113025026395917,
+      "attribute_load_seconds": 0.07434995798394084,
+      "locator_build_seconds": 0.1554942918010056,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 392003584,
+        "process_reported_peak_rss_bytes": 392003584,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.2617785418406129,
+      "ready_memory": {
+        "rss_bytes": 3306078208,
+        "process_reported_peak_rss_bytes": 3306078208,
+        "arrow_current_allocated_bytes": 86709824,
+        "arrow_pool_peak_bytes": 1981323712,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.5171547080390155,
+      "metrics": {
+        "read_filter_seconds": 0.25766333285719156,
+        "decode_seconds": 0.002164416015148163,
+        "candidate_group_ids": [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 13, 17, 19, 23, 24, 33, 34, 35, 38, 39, 44, 58, 64, 66, 77, 79, 103, 104, 105, 108, 115, 116, 117, 118, 132, 133, 168, 169, 184, 190, 212, 214, 256, 258, 260, 266, 280, 281, 282, 283, 286, 312, 314, 380, 409, 419, 444, 447, 492, 493, 494, 496, 503, 519, 520, 521, 524, 553, 554, 555, 628, 629, 660, 671, 696, 699, 744, 745, 746, 747, 748, 755, 771, 772, 773, 774, 776, 777, 805, 806, 807, 880, 881, 912],
+        "candidate_groups": 94,
+        "candidate_rows": 385188,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": "not measured",
+        "selected_wkb_bytes": 2459871,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": "not measured",
+        "query_buffers": {
+          "logical_bytes": 2459909,
+          "retained_backing_bytes": 2460285
+        },
+        "candidate_column_chunks_compressed_bytes": 750415155,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/06-largest-filtered.arrow"
+    },
+    {
+      "sequence": 7,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection ordinary --method explicit_groups --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/07-ordinary-explicit_groups.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/07-ordinary-explicit_groups.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:52:18.291745+00:00",
+      "selection": "ordinary",
+      "query_ids": [3110936770, 3110689390, 4110131420],
+      "source_group": 580,
+      "source_group_geometry_compressed_bytes": 2924951,
+      "method": "explicit_groups",
+      "initial_memory": {
+        "rss_bytes": 71663616,
+        "process_reported_peak_rss_bytes": 71663616,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.022691667079925537,
+      "preparation_seconds": 0.23004199983552098,
+      "attribute_load_seconds": 0.0758553328923881,
+      "locator_build_seconds": 0.15275258291512728,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 391888896,
+        "process_reported_peak_rss_bytes": 391888896,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.010381499771028757,
+      "ready_memory": {
+        "rss_bytes": 403046400,
+        "process_reported_peak_rss_bytes": 403046400,
+        "arrow_current_allocated_bytes": 84248192,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.2635309579782188,
+      "metrics": {
+        "read_filter_seconds": 0.010100165847688913,
+        "decode_seconds": 0.00013870885595679283,
+        "candidate_group_ids": [580],
+        "candidate_groups": 1,
+        "candidate_rows": 4098,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": 5227386,
+        "selected_wkb_bytes": 4253,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": {
+          "logical_bytes": 5276562,
+          "retained_backing_bytes": 5276566
+        },
+        "query_buffers": {
+          "logical_bytes": 4290,
+          "retained_backing_bytes": 4294
+        },
+        "candidate_column_chunks_compressed_bytes": 2949496,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/07-ordinary-explicit_groups.arrow"
+    },
+    {
+      "sequence": 8,
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --receipt /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json --selection ordinary --method filtered --witness /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/08-ordinary-filtered.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/08-ordinary-filtered.json --activity 'No concurrent coordinated experiments; graph writing records/PR only; other laptop work unknown'",
+      "status": "passed",
+      "utc": "2026-10-06T19:52:27.154063+00:00",
+      "selection": "ordinary",
+      "query_ids": [3110936770, 3110689390, 4110131420],
+      "source_group": 580,
+      "source_group_geometry_compressed_bytes": 2924951,
+      "method": "filtered",
+      "initial_memory": {
+        "rss_bytes": 70221824,
+        "process_reported_peak_rss_bytes": 70221824,
+        "arrow_current_allocated_bytes": 0,
+        "arrow_pool_peak_bytes": 128,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "startup_seconds": 0.021744207944720984,
+      "preparation_seconds": 0.22521624993532896,
+      "attribute_load_seconds": 0.07729937508702278,
+      "locator_build_seconds": 0.14671166706830263,
+      "locator_buffers": {
+        "parent_level_attributes": {
+          "logical_bytes": 53953750,
+          "retained_backing_bytes": 53953750
+        },
+        "catchment_id_column": {
+          "logical_bytes": 30289824,
+          "retained_backing_bytes": 30289824
+        },
+        "locator_numpy_owned_bytes": 60587040,
+        "locator_numpy_arrays": {
+          "sorted_ids": 30289824,
+          "row_positions": 30289824,
+          "group_ends": 7392
+        },
+        "locator_temporary_peak_bytes": "not measured",
+        "graph": "excluded",
+        "graph_lookup": "excluded"
+      },
+      "preparation_memory": {
+        "rss_bytes": 390742016,
+        "process_reported_peak_rss_bytes": 390742016,
+        "arrow_current_allocated_bytes": 84243712,
+        "arrow_pool_peak_bytes": 178682240,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "query_seconds": 0.2919000000692904,
+      "ready_memory": {
+        "rss_bytes": 3593814016,
+        "process_reported_peak_rss_bytes": 3593814016,
+        "arrow_current_allocated_bytes": 84261568,
+        "arrow_pool_peak_bytes": 2114586112,
+        "method": "psutil endpoint RSS; getrusage lifetime high-water RSS, not sampled; Arrow pool separate"
+      },
+      "total_to_ready_seconds": 0.5393013330176473,
+      "metrics": {
+        "read_filter_seconds": 0.28923620795831084,
+        "decode_seconds": 0.00016312487423419952,
+        "candidate_group_ids": [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 33, 34, 35, 39, 40, 41, 42, 43, 48, 49, 52, 53, 56, 57, 58, 64, 77, 79, 103, 105, 108, 119, 122, 123, 124, 125, 128, 129, 142, 143, 145, 146, 153, 155, 156, 163, 166, 168, 184, 212, 214, 256, 258, 260, 266, 288, 293, 294, 298, 299, 304, 305, 306, 307, 331, 332, 334, 336, 337, 338, 339, 350, 351, 354, 355, 356, 370, 376, 378, 379, 380, 409, 444, 447, 492, 493, 494, 496, 503, 527, 528, 529, 530, 531, 532, 533, 534, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 566, 567, 568, 569, 570, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 623, 624, 626, 627, 628, 660, 696, 699, 744, 745, 746, 748, 755, 779, 785, 786, 790, 791, 792, 797, 798, 799, 800, 819, 822, 823, 824, 825, 826, 827, 830, 832, 833, 834, 835, 848, 849, 852, 853, 854, 880, 912],
+        "candidate_groups": 209,
+        "candidate_rows": 856422,
+        "selected_rows": 3,
+        "exact_selected_ids_check": "passed",
+        "materialized_prefilter_wkb_bytes": "not measured",
+        "selected_wkb_bytes": 4253,
+        "decoded_geometry_count": 3,
+        "candidate_buffers": "not measured",
+        "query_buffers": {
+          "logical_bytes": 4291,
+          "retained_backing_bytes": 5127
+        },
+        "candidate_column_chunks_compressed_bytes": 1177229214,
+        "remote_requests": "not measured",
+        "remote_response_bytes": "not measured"
+      },
+      "retained_decoded_geometry_count": 3,
+      "witness_path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/08-ordinary-filtered.arrow"
+    }
+  ],
+  "comparisons": [
+    {
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py compare /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/01-ordinary-filtered.arrow /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/02-ordinary-explicit_groups.arrow /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/07-ordinary-explicit_groups.arrow /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/08-ordinary-filtered.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/ordinary-equality.json",
+      "status": "passed",
+      "comparison": "exact Arrow table equality after ID sort: id, geometry, decoded_wkb; source/decoded equals_exact tolerance=0",
+      "selected_rows": 3,
+      "witnesses": [
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/01-ordinary-filtered.arrow",
+          "sha256": "009d0e84f7273fd49d589b10b23ac044050dd1b8f8336c1d55187272121dc3fe"
+        },
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/02-ordinary-explicit_groups.arrow",
+          "sha256": "6b81d2519a1fc3f889db894f009e2a888c5493011e874153d815bfe6f706baf5"
+        },
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/07-ordinary-explicit_groups.arrow",
+          "sha256": "6b81d2519a1fc3f889db894f009e2a888c5493011e874153d815bfe6f706baf5"
+        },
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/08-ordinary-filtered.arrow",
+          "sha256": "009d0e84f7273fd49d589b10b23ac044050dd1b8f8336c1d55187272121dc3fe"
+        }
+      ],
+      "digest_framing": "SHA256 of complete Arrow IPC file, with schema and length-framed columns; equality is direct, not hash-only"
+    },
+    {
+      "command": "uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py compare /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/03-largest-filtered.arrow /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/04-largest-explicit_groups.arrow /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/05-largest-explicit_groups.arrow /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/06-largest-filtered.arrow --output /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/largest-equality.json",
+      "status": "passed",
+      "comparison": "exact Arrow table equality after ID sort: id, geometry, decoded_wkb; source/decoded equals_exact tolerance=0",
+      "selected_rows": 3,
+      "witnesses": [
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/03-largest-filtered.arrow",
+          "sha256": "b60ad1f0834bb38585ea1be16b1bbeb6ca059f259924eacc0c94024e44da675e"
+        },
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/04-largest-explicit_groups.arrow",
+          "sha256": "b60ad1f0834bb38585ea1be16b1bbeb6ca059f259924eacc0c94024e44da675e"
+        },
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/05-largest-explicit_groups.arrow",
+          "sha256": "b60ad1f0834bb38585ea1be16b1bbeb6ca059f259924eacc0c94024e44da675e"
+        },
+        {
+          "path": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-followups/outputs/polygon/06-largest-filtered.arrow",
+          "sha256": "b60ad1f0834bb38585ea1be16b1bbeb6ca059f259924eacc0c94024e44da675e"
+        }
+      ],
+      "digest_framing": "SHA256 of complete Arrow IPC file, with schema and length-framed columns; equality is direct, not hash-only"
+    }
+  ]
+}
