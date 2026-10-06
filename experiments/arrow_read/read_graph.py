@@ -29,6 +29,11 @@ PROJECTION = ["id", "level", "upstream_ids"]
 IntArray = npt.NDArray[np.int64]
 
 
+def check_position_capacity(rows: int) -> None:
+    if rows > np.iinfo(np.uint32).max:
+        raise ValueError("graph exceeds uint32 position capacity")
+
+
 class Graph:
     def __init__(self, table: pa.Table) -> None:
         compact_start = time.perf_counter()
@@ -48,7 +53,8 @@ class Graph:
             raise ValueError("null edge")
         self.offsets = adjacency.offsets.to_numpy()
         self.edges: IntArray = adjacency.values.to_numpy()
-        self.order: IntArray = np.argsort(self.ids)
+        check_position_capacity(len(self.ids))
+        self.order: npt.NDArray[np.uint32] = np.argsort(self.ids).astype(np.uint32)
         self.sorted_ids = self.ids[self.order]
         if np.any(self.ids <= 0) or np.any(self.levels < 0):
             raise ValueError("nonpositive ID or negative level")

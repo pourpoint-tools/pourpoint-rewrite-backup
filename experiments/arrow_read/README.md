@@ -4,7 +4,7 @@ This isolated experiment reads the unchanged HFX 0.3.0 graph projection `id`,
 `level`, `upstream_ids`. It compares serial reads (`pre_buffer=False`,
 `use_threads=False`) with Arrow coalescing/prefetch and threaded decoding
 (`pre_buffer=True`, `use_threads=True`). Both use `buffer_size=0`, no memory map,
-the same combined Arrow buffers, and two owned NumPy int64 lookup arrays.
+the same combined Arrow buffers, and owned NumPy int64 sorted IDs and uint32 row positions.
 No production engine code changes.
 
 Run from this directory with `uv sync --locked`, then `uv run pytest -q`,
@@ -50,7 +50,8 @@ references/levels. Full graph, parent, and geometry conformance is excluded.
   separate. Query timings exclude independent reference checks and serialization.
 - Graph referenced bytes use Arrow `Table.nbytes`; retained bytes walk buffers to
   their root parents and deduplicate addresses. NumPy graph arrays are zero-copy
-  views. Sorted IDs and row positions are separate owned int64 arrays.
+  views. Sorted IDs are owned int64; positions are owned uint32 with an explicit
+  capacity check. The temporary native-intp argsort output is discarded.
 - Query workspace is a labeled calculation: `rows * (1-byte visited + 8-byte
   stack)`. Output bytes are separate; transient selection/sort copies are not
   included in that calculation. Process peak includes these allocations.

@@ -35,7 +35,7 @@ def test_reader_preserves_projection(tmp_path: Path, mode: str) -> None:
     graph, _, _ = read_graph(str(source), mode, None)
     assert graph.table.equals(table())
     assert graph.upstream(90).tolist() == [11, 20, 70, 90]
-    assert graph.buffers()["lookup_owned_bytes"] == 80
+    assert graph.buffers()["lookup_owned_bytes"] == 60
 
 
 @pytest.mark.parametrize("ids", [[90, 20, 70, 11, 90], [0, 20, 70, 11, 300]])
@@ -58,3 +58,38 @@ def test_slices_count_retained_backing() -> None:
     buffers = graph.buffers()
     assert buffers["graph_retained_backing_bytes"] >= buffers["graph_referenced_bytes"]
     np.testing.assert_array_equal(graph.ids, [20, 70, 11])
+
+
+@pytest.mark.parametrize(
+    "column,values,dtype",
+    [
+        ("id", [90, 20, None, 11, 300], pa.int64()),
+        ("level", [2, 2, -1, 2, 1], pa.int16()),
+        ("level", [2, 2, None, 2, 1], pa.int16()),
+        ("upstream_ids", [[20, None], [11], [11], [], []], pa.list_(pa.int64())),
+        ("upstream_ids", [[20, 70], None, [11], [], []], pa.list_(pa.int64())),
+    ],
+)
+def test_null_and_level_safety(column: str, values: list[object], dtype: pa.DataType) -> None:
+    source = table()
+    with pytest.raises(ValueError):
+        Graph(
+            source.set_column(
+                source.schema.get_field_index(column), column, pa.array(values, type=dtype)
+            )
+        )
+
+
+def test_reference_matches_independent_dag_membership() -> None:
+    from read_graph import reference_upstream
+
+    assert reference_upstream(table(), 90).tolist() == [11, 20, 70, 90]
+
+
+def test_compact_position_capacity() -> None:
+    from read_graph import check_position_capacity
+
+    check_position_capacity(2**32 - 1)
+    with pytest.raises(ValueError, match="uint32"):
+        check_position_capacity(2**32)
+    assert Graph(table()).order.dtype == np.dtype("uint32")
