@@ -1,0 +1,39 @@
+{
+  "commit": "422babb3fb4c89dc623eaaa808f03653dd42bd43",
+  "method": "finest level: terminal of largest weak component; terminal of weak component nearest 1000 rows; smallest headwater ID. Ties use smallest ID. Requires declared tree and checked <=1 downstream edge. Selection excluded from measurement.",
+  "level": 11,
+  "queries": [
+    {
+      "role": "large",
+      "id": 6120007000,
+      "component_rows": 44962
+    },
+    {
+      "role": "medium",
+      "id": 5120068450,
+      "component_rows": 1004
+    },
+    {
+      "role": "headwater",
+      "id": 1120000010
+    }
+  ],
+  "objects": [
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+      "relative_path": "graph.parquet",
+      "size_bytes": 112610620,
+      "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+      "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+      "download_seconds": 4.215565541759133
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/manifest.json",
+      "relative_path": "manifest.json",
+      "size_bytes": 1848,
+      "etag": "\"0705d81e8353441dd021236cc76c8fb1\"",
+      "sha256": "81da3c17b070b80933dfd1d4e90fc9166f7f6fefedde109c1f43fe0aad1bd954",
+      "download_seconds": 0.2951499158516526
+    }
+  ]
+}
