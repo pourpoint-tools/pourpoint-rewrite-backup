@@ -62,6 +62,43 @@ a headwater. Selection is outside measured work.
   No cross-level traversal or parent semantics are implemented. Remote traffic is
   **not measured**. Initial download is recorded separately by the coordinator.
 
+## Saved HydroBASINS results
+
+Code commit: `422babb3fb4c89dc623eaaa808f03653dd42bd43`.
+Graph object SHA256:
+`13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7`.
+All four runs read 3,786,228 rows and 3,504,135 edges. Exact SciPy membership
+checks passed for every query and exact repeat checks passed on every call.
+
+The initial [ID](results/id-overlap.json) and
+[dense](results/dense-overlap.json) pair overlapped Arrow remote reads.
+The final pair below ran dense then ID, with no coordinated competing experiment.
+Other laptop activity was uncontrolled. No cold-cache claim is made.
+
+| Final local run | Load (s) | Compact/index (s) | Convert (s) | Ready RSS (bytes) |
+|---|---:|---:|---:|---:|
+| [id](results/id-isolated.json) | 0.056882 | 0.150839 | not applicable | 402,292,736 |
+| [dense](results/dense-isolated.json) | 0.055837 | 0.151008 | 0.065389 | 420,462,592 |
+
+| Query ID | Selected rows | ID first (s) | ID repeat median (s) | Dense first (s) | Dense repeat median (s) |
+|---|---:|---:|---:|---:|---:|
+| 6120007000 | 44,962 | 0.048507 | 0.047225 | 0.016374 | 0.015997 |
+| 5120068450 | 1,004 | 0.001271 | 0.001198 | 0.000536 | 0.000527 |
+| 1120000010 | 1 | 0.000155 | 0.000161 | 0.000150 | 0.000136 |
+
+Repeat medians are calculations from the five saved repeated-call times; all
+other table values are saved observations rounded to six decimal seconds.
+[Query selection](results/queries.json) records the graph-only selection rule
+and IDs. Each JSON contains exact command arguments, object ETags/sizes/SHA256,
+package versions, reader settings and memory samples summarized by phase.
+
+Both modes retain 81,040,276 bytes of Arrow graph/level backing buffers
+(81,040,272 logical bytes) and 45,434,736 bytes of owned lookup arrays.
+Dense mode additionally retains 14,016,540 bytes of converted edge positions.
+Each query allocates 3,786,228 visited bytes and 15,144,912 queue bytes, plus its
+selected-ID result. These are buffer sizes, not total process RSS. Individual
+phases record sampled peaks and lifetime peaks separately from Arrow allocation.
+
 ## Validation
 
 ```sh

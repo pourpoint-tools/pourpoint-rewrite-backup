@@ -1,0 +1,568 @@
+{
+  "schema": "dense-topology-measurement-v1",
+  "status": "ok",
+  "started_utc": "2026-10-06T19:14:41.721106+00:00",
+  "commit": "422babb3fb4c89dc623eaaa808f03653dd42bd43",
+  "command_arguments": [
+    "--data",
+    "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins",
+    "--receipt",
+    "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/download-receipt.json",
+    "--commit",
+    "422babb3fb4c89dc623eaaa808f03653dd42bd43",
+    "--ids",
+    "6120007000",
+    "5120068450",
+    "1120000010",
+    "--repeats",
+    "5",
+    "--concurrent-activity",
+    "Arrow remote graph reads; selective idle; other laptop activity uncontrolled",
+    "--mode",
+    "id",
+    "--output",
+    "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/outputs/dense_topology/id-overlap.json"
+  ],
+  "mode": "id",
+  "state": "local warm/OS-cache-uncontrolled; fresh process/layout",
+  "concurrent_activity": "Arrow remote graph reads; selective idle; other laptop activity uncontrolled",
+  "objects": [
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+      "relative_path": "graph.parquet",
+      "size_bytes": 112610620,
+      "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+      "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+      "download_seconds": 4.215565541759133
+    },
+    {
+      "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/manifest.json",
+      "relative_path": "manifest.json",
+      "size_bytes": 1848,
+      "etag": "\"0705d81e8353441dd021236cc76c8fb1\"",
+      "sha256": "81da3c17b070b80933dfd1d4e90fc9166f7f6fefedde109c1f43fe0aad1bd954",
+      "download_seconds": 0.2951499158516526
+    }
+  ],
+  "dataset": {
+    "adapter_version": "0.1.0",
+    "auxiliary": [
+      {
+        "artifacts": {
+          "snap": "aux/snap_stems.parquet"
+        },
+        "metadata": {
+          "description": "Unclipped HydroRIVERS reach centerlines for HydroBASINS Pfaf-12 snapping. HydroRIVERS and HydroBASINS are HydroSHEDS products covered by the HydroSHEDS License Agreement. weight = UPLAND_SKM (km^2). stem_role = mainstem/tributary derived from NEXT_DOWN confluences.",
+          "name": "stems",
+          "references_levels": [
+            11
+          ],
+          "weight_semantics": "drainage_area_km2"
+        },
+        "schema": "hfx.aux.snap.v2"
+      }
+    ],
+    "bbox": [
+      -180.0,
+      -90.0,
+      180.0,
+      90.0
+    ],
+    "created_at": "2026-07-20T20:25:39.997073+00:00",
+    "crs": "EPSG:4326",
+    "fabric_name": "hydrobasins",
+    "fabric_version": "v1c",
+    "format_version": "0.3.0",
+    "has_up_area": true,
+    "metadata": {
+      "attribution": "This product hydrobasins-pfaf1-12-nested-global-snap incorporates data from the HydroSHEDS version 1 database which is (c) World Wildlife Fund, Inc. (2006-2022) and has been used herein under license. WWF has not evaluated the data as altered and incorporated within hydrobasins-pfaf1-12-nested-global-snap, and therefore gives no warranty regarding its accuracy, completeness, currency or suitability for any particular purpose. Portions of the HydroSHEDS v1 database incorporate data which are the intellectual property rights of (c) USGS (2006-2008), NASA (2000-2005), ESRI (1992-1998), CIAT (2004-2006), UNEP-WCMC (1993), WWF (2004), Commonwealth of Australia (2007), and Her Royal Majesty and the British Crown and are used under license. The HydroSHEDS v1 database and more information are available at https://www.hydrosheds.org.",
+      "provenance_file": "ATTRIBUTION_AND_PROVENANCE.txt"
+    },
+    "topology": "tree",
+    "unit_count": 3786228
+  },
+  "versions": {
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "psutil": "7.2.2",
+    "scipy": "1.18.1"
+  },
+  "python": "3.14.6 (main, Jul 23 2026, 14:51:00) [Clang 22.1.3 ]",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "reader": {
+    "columns": [
+      "id",
+      "level",
+      "upstream_ids"
+    ],
+    "pre_buffer": true,
+    "use_threads": true,
+    "memory_map": false
+  },
+  "remote_requests": "not measured",
+  "remote_response_bytes": "not measured",
+  "parent_buffers_bytes": "not measured",
+  "locator_buffers_bytes": "not measured",
+  "excluded": "parents, other attributes, catchment locator, geometry, snap, union, area, full HFX conformance, download",
+  "rss_method": "psutil RSS sampled every 0.005 seconds plus phase endpoints; ru_maxrss is process-lifetime peak, bytes on macOS/KiB elsewhere; Arrow pool counters are separate, not process memory",
+  "startup_seconds": 0.15333890914916992,
+  "startup_method": "wall clock before read minus process creation time; includes imports/argument parsing; excludes uv launcher",
+  "initial_memory": {
+    "rss_bytes": 76873728,
+    "process_peak_rss_bytes": 76873728,
+    "arrow_live_allocated_bytes": 0,
+    "arrow_pool_peak_bytes": 0
+  },
+  "load": {
+    "seconds": 0.05701499991118908,
+    "before": {
+      "rss_bytes": 76890112,
+      "process_peak_rss_bytes": 76890112,
+      "arrow_live_allocated_bytes": 0,
+      "arrow_pool_peak_bytes": 0
+    },
+    "after": {
+      "rss_bytes": 268058624,
+      "process_peak_rss_bytes": 268091392,
+      "arrow_live_allocated_bytes": 115937024,
+      "arrow_pool_peak_bytes": 127528704
+    },
+    "sampled_peak_rss_bytes": 268058624,
+    "sample_count": 10
+  },
+  "compact_and_index": {
+    "seconds": 0.14671179186552763,
+    "before": {
+      "rss_bytes": 268058624,
+      "process_peak_rss_bytes": 268091392,
+      "arrow_live_allocated_bytes": 112143168,
+      "arrow_pool_peak_bytes": 127528704
+    },
+    "after": {
+      "rss_bytes": 402964480,
+      "process_peak_rss_bytes": 402997248,
+      "arrow_live_allocated_bytes": 162726528,
+      "arrow_pool_peak_bytes": 162726528
+    },
+    "sampled_peak_rss_bytes": 402964480,
+    "sample_count": 25
+  },
+  "after_release_read_table": {
+    "rss_bytes": 402980864,
+    "process_peak_rss_bytes": 402997248,
+    "arrow_live_allocated_bytes": 81040384,
+    "arrow_pool_peak_bytes": 162726528
+  },
+  "conversion": "not applicable",
+  "rows": 3786228,
+  "edges": 3504135,
+  "buffers": {
+    "graph_arrow_logical_bytes": 73467816,
+    "graph_arrow_retained_bytes": 73467820,
+    "level_arrow_logical_bytes": 7572456,
+    "level_arrow_retained_bytes": 7572456,
+    "lookup_numpy_owned_bytes": 45434736,
+    "dense_edges_numpy_owned_bytes": 0,
+    "query_seen_numpy_owned_bytes": 3786228,
+    "query_queue_numpy_owned_bytes": 15144912,
+    "dtypes": "ID int64; lookup/edges/queue uint32; offsets int32; level int16",
+    "graph_numpy_views": "zero-copy Arrow views; not additional allocations",
+    "conversion_temporary_buffers": "not measured individually; see phase RSS"
+  },
+  "ready_memory": {
+    "rss_bytes": 403062784,
+    "process_peak_rss_bytes": 403062784,
+    "arrow_live_allocated_bytes": 81040384,
+    "arrow_pool_peak_bytes": 162726528
+  },
+  "queries": [
+    {
+      "id": 6120007000,
+      "selected_count": 44962,
+      "sorted_ids_sha256": "aa360cb932a176ab0bd7c39bdad1de76f89da8950c03a15604701366a6a62b71",
+      "timings": [
+        {
+          "seconds": 0.047199083026498556,
+          "before": {
+            "rss_bytes": 403062784,
+            "process_peak_rss_bytes": 403062784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 403931136,
+            "process_peak_rss_bytes": 403931136,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 403898368,
+          "sample_count": 9,
+          "state": "first call for this ID",
+          "result_numpy_owned_bytes": 359696,
+          "correctness_arrays_retained_before_query_bytes": 0
+        },
+        {
+          "seconds": 0.046956583857536316,
+          "before": {
+            "rss_bytes": 404324352,
+            "process_peak_rss_bytes": 404324352,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 404422656,
+            "process_peak_rss_bytes": 404422656,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 404389888,
+          "sample_count": 9,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 359696,
+          "correctness_arrays_retained_before_query_bytes": 359696
+        },
+        {
+          "seconds": 0.05051966616883874,
+          "before": {
+            "rss_bytes": 405684224,
+            "process_peak_rss_bytes": 405684224,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 406274048,
+            "process_peak_rss_bytes": 406306816,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 406274048,
+          "sample_count": 10,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 359696,
+          "correctness_arrays_retained_before_query_bytes": 359696
+        },
+        {
+          "seconds": 0.04826158285140991,
+          "before": {
+            "rss_bytes": 407552000,
+            "process_peak_rss_bytes": 407552000,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 407945216,
+            "process_peak_rss_bytes": 407945216,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 407912448,
+          "sample_count": 9,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 359696,
+          "correctness_arrays_retained_before_query_bytes": 359696
+        },
+        {
+          "seconds": 0.047698082868009806,
+          "before": {
+            "rss_bytes": 408371200,
+            "process_peak_rss_bytes": 408371200,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 412532736,
+            "process_peak_rss_bytes": 412565504,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 412532736,
+          "sample_count": 9,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 359696,
+          "correctness_arrays_retained_before_query_bytes": 359696
+        },
+        {
+          "seconds": 0.04792208410799503,
+          "before": {
+            "rss_bytes": 413810688,
+            "process_peak_rss_bytes": 413810688,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 417644544,
+            "process_peak_rss_bytes": 417644544,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 417644544,
+          "sample_count": 9,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 359696,
+          "correctness_arrays_retained_before_query_bytes": 359696
+        }
+      ]
+    },
+    {
+      "id": 5120068450,
+      "selected_count": 1004,
+      "sorted_ids_sha256": "8e0d10b442a7de6735aa0f00e89c450692aa5e899cff35a060b0b12234601c39",
+      "timings": [
+        {
+          "seconds": 0.001247582957148552,
+          "before": {
+            "rss_bytes": 417660928,
+            "process_peak_rss_bytes": 417660928,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 417660928,
+            "process_peak_rss_bytes": 417693696,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 417660928,
+          "sample_count": 2,
+          "state": "first call for this ID",
+          "result_numpy_owned_bytes": 8032,
+          "correctness_arrays_retained_before_query_bytes": 359696
+        },
+        {
+          "seconds": 0.0012251660227775574,
+          "before": {
+            "rss_bytes": 417660928,
+            "process_peak_rss_bytes": 417693696,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 417693696,
+            "process_peak_rss_bytes": 417693696,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 417693696,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8032,
+          "correctness_arrays_retained_before_query_bytes": 367728
+        },
+        {
+          "seconds": 0.0012232502922415733,
+          "before": {
+            "rss_bytes": 417660928,
+            "process_peak_rss_bytes": 417693696,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 417660928,
+            "process_peak_rss_bytes": 417693696,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 417660928,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8032,
+          "correctness_arrays_retained_before_query_bytes": 367728
+        },
+        {
+          "seconds": 0.0012644589878618717,
+          "before": {
+            "rss_bytes": 417660928,
+            "process_peak_rss_bytes": 417693696,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8032,
+          "correctness_arrays_retained_before_query_bytes": 367728
+        },
+        {
+          "seconds": 0.0011980831623077393,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8032,
+          "correctness_arrays_retained_before_query_bytes": 367728
+        },
+        {
+          "seconds": 0.00123291602358222,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8032,
+          "correctness_arrays_retained_before_query_bytes": 367728
+        }
+      ]
+    },
+    {
+      "id": 1120000010,
+      "selected_count": 1,
+      "sorted_ids_sha256": "01fa85d8968c5624ba6e710e6e1e7f749e40f285165719904cb46aa8897a389a",
+      "timings": [
+        {
+          "seconds": 0.00018425006419420242,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "first call for this ID",
+          "result_numpy_owned_bytes": 8,
+          "correctness_arrays_retained_before_query_bytes": 367728
+        },
+        {
+          "seconds": 0.00014441600069403648,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8,
+          "correctness_arrays_retained_before_query_bytes": 367736
+        },
+        {
+          "seconds": 0.00014424975961446762,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8,
+          "correctness_arrays_retained_before_query_bytes": 367736
+        },
+        {
+          "seconds": 0.00013795820996165276,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8,
+          "correctness_arrays_retained_before_query_bytes": 367736
+        },
+        {
+          "seconds": 0.00016237515956163406,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8,
+          "correctness_arrays_retained_before_query_bytes": 367736
+        },
+        {
+          "seconds": 0.0002210000529885292,
+          "before": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "after": {
+            "rss_bytes": 421462016,
+            "process_peak_rss_bytes": 421494784,
+            "arrow_live_allocated_bytes": 81040384,
+            "arrow_pool_peak_bytes": 162726528
+          },
+          "sampled_peak_rss_bytes": 421462016,
+          "sample_count": 2,
+          "state": "repeated; fresh query workspace",
+          "result_numpy_owned_bytes": 8,
+          "correctness_arrays_retained_before_query_bytes": 367736
+        }
+      ]
+    }
+  ],
+  "correctness": "exact original-ID arrays equal SciPy BFS for every query; repeats exact",
+  "memory_after_oracle_excluded_from_timings": {
+    "rss_bytes": 972685312,
+    "process_peak_rss_bytes": 972685312,
+    "arrow_live_allocated_bytes": 81040384,
+    "arrow_pool_peak_bytes": 162726528
+  }
+}
