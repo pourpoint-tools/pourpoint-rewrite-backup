@@ -1,0 +1,114 @@
+{
+  "status": "ok",
+  "experiment_commit": "05b72f2fb30f41fc612605496367de26eb8d3559",
+  "object_identity": {
+    "bucket": "pourpoint-hfx",
+    "endpoint": "https://fsn1.your-objectstorage.com",
+    "prefix": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/",
+    "key": "hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/graph.parquet",
+    "relative_path": "graph.parquet",
+    "size_bytes": 112610620,
+    "etag": "\"e5e4bf7f354a27fb9ff977fb86e43d9c-14\"",
+    "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+    "download_seconds": 4.215565541759133
+  },
+  "source": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins/graph.parquet",
+  "mode": "serial",
+  "state": "fresh process; warm local / OS cache uncontrolled",
+  "concurrent_activity": "No sibling heavy experiments; other laptop work uncontrolled",
+  "settings": {
+    "projection": [
+      "id",
+      "level",
+      "upstream_ids"
+    ],
+    "pre_buffer": false,
+    "use_threads": false,
+    "buffer_size": 0,
+    "memory_map": false,
+    "arrow_cpu_count": 16,
+    "arrow_io_thread_count": 8
+  },
+  "versions": {
+    "pyarrow": "25.0.1",
+    "numpy": "2.5.3",
+    "psutil": "7.2.2",
+    "boto3": "1.43.108"
+  },
+  "python": "3.14.6",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "timings": {
+    "imports_seconds": 0.11986149987205863,
+    "filesystem_setup_seconds": 8.381903171539307e-08,
+    "open_footer_seconds": 0.002560459077358246,
+    "read_seconds": 0.07170362491160631,
+    "compact_index_runtime_checks_seconds": 0.1368852504529059,
+    "compact_seconds": 5.675014108419418e-05,
+    "index_runtime_checks_seconds": 0.13681733282282948,
+    "load_total_seconds": 0.21114933444187045
+  },
+  "graph_value_sha256": {
+    "ids": "1a355b2fb91b83aef78cf9e97728aea10cc58197de678d2c90024b4120131266",
+    "edges": "38f5d4061a0a9a6db49b07cb4d0280e6c6521435103093502114958ee13f9d93"
+  },
+  "rows": 3786228,
+  "edges": 3504135,
+  "buffers": {
+    "graph_referenced_bytes": 81478289,
+    "graph_retained_backing_bytes": 81478293,
+    "lookup_owned_bytes": 45434736,
+    "lookup_referenced_bytes": 45434736,
+    "parent_attribute_bytes": 0,
+    "locator_bytes": 0,
+    "numpy_graph_views_additional_owned_bytes": 0
+  },
+  "rss_after_load_bytes": 269451264,
+  "process_peak_rss_bytes": 305758208,
+  "peak_method": "process ru_maxrss; includes imports, queries, reference checks",
+  "arrow_live_allocated_bytes": 81478464,
+  "arrow_pool_peak_bytes": 156563968,
+  "remote_requests": "not measured",
+  "remote_response_bytes": "not measured",
+  "storage": {
+    "row_groups": 924,
+    "projected_compressed_column_chunk_bytes": 45485602
+  },
+  "queries": [
+    {
+      "unit_id": 6010000010,
+      "seconds": 0.000752416905015707,
+      "count": 1,
+      "sorted_ids_sha256": "009d9bf4867558fe04e2b7d610f217d02feb5aa3294315840224e51cfdf3254a",
+      "reference_exact_match": true,
+      "result_bytes": 8,
+      "workspace_owned_bytes": 34076052
+    },
+    {
+      "unit_id": 2070018460,
+      "seconds": 0.0007994589395821095,
+      "count": 24,
+      "sorted_ids_sha256": "572efb79f2f7c6e941c1a3b35e0f20d251fb867e7bc45bad4bbef6fea542c68b",
+      "reference_exact_match": true,
+      "result_bytes": 192,
+      "workspace_owned_bytes": 34076052
+    },
+    {
+      "unit_id": 2070694550,
+      "seconds": 0.0008399579674005508,
+      "count": 17,
+      "sorted_ids_sha256": "8efbb40be942e80d2ed63d03fcf383e23cf0521b4f0ff8d521697b9edc613750",
+      "reference_exact_match": true,
+      "result_bytes": 136,
+      "workspace_owned_bytes": 34076052
+    }
+  ],
+  "excluded": [
+    "parents",
+    "catchment locator",
+    "geometry",
+    "snap",
+    "rasters",
+    "complete conformance validation",
+    "initial download"
+  ]
+}
