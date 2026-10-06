@@ -28,13 +28,15 @@ The receipt's download duration is not part of warm local query timings.
 - Attribute-only projection: `id`, `level`, `parent_id`, `up_area_km2`. Nulls remain
   Arrow nulls. No geometry is loaded. Attribute read and numeric catchment-ID locator
   construction have separate timers. The locator sorts original IDs, never graph rows.
+  Locator sorted IDs, row positions, and cumulative group ends all use int64.
 - Polygon selection: three declared IDs (first, middle, last) from each of two
   existing row groups: median and largest compressed geometry chunk. Ordinary
   Arrow filtered reads and explicit locator candidate-group reads use the same
   projection and exact ID check. Decode only selected WKB. Byte-for-byte selected
   WKB equality is checked across methods and repeats.
 - Snap candidates: 0.1-degree boxes around the first stored bbox center in median
-  and largest geometry groups. Preserve individual snap IDs and many-to-one unit
+  and largest geometry groups. If bbox is absent or the first row is null, use the
+  declared fallback box `[-0.1, -0.1, 0.1, 0.1]`. Preserve individual snap IDs and many-to-one unit
   references. Null/missing bbox rows remain candidates, then use decoded geometry
   bounds as fallback. Verify exact IDs/unit IDs/WKB across methods and repeats;
   verify referenced catchment levels against the manifest. Distance, radius,
@@ -42,7 +44,10 @@ The receipt's download duration is not part of warm local query timings.
 
 Each query is repeated once with method order reversed. Local OS cache state is
 uncontrolled. The locator is reused, not polygon/geometry results. Equality checks
-retain only selected WKB, not whole-dataset geometry. Times are laptop diagnostics.
+retain only selected WKB, not whole-dataset geometry. Times are laptop diagnostics. Startup covers entry into `run()` through manifest,
+commit, and environment capture; interpreter startup and imports are excluded. Query
+read timers include metadata candidate selection, I/O, and filtering; polygon timers
+also include locator query lookup. Snap decode timing includes fallback filtering.
 
 Arrow `nbytes` measures logical referenced bytes; `get_total_buffer_size()` measures
 whole retained buffers. Locator NumPy arrays own their reported buffers. Logical

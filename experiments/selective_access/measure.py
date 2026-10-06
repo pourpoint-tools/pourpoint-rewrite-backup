@@ -143,10 +143,12 @@ def run(data: Path, receipt: Path, activity: str) -> dict[str, object]:
             geometry_groups(snap_file),
         ):
             # Only scalar bbox input planning; geometry never loaded here.
-            scalar = snap_file.read_row_group(
-                group, columns=["bbox"], use_threads=False
-            )
-            bbox = scalar["bbox"][0].as_py()
+            bbox = None
+            if "bbox" in snap_file.schema_arrow.names:
+                scalar = snap_file.read_row_group(
+                    group, columns=["bbox"], use_threads=False
+                )
+                bbox = scalar["bbox"][0].as_py()
             if bbox is None:
                 bounds = (-0.1, -0.1, 0.1, 0.1)
             else:

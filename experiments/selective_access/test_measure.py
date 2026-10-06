@@ -5,12 +5,14 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 from shapely.geometry import Point, box
 
 from measure import run
 
 
-def test_complete_measurement(tmp_path: Path) -> None:
+@pytest.mark.parametrize("has_bbox", [False, True])
+def test_complete_measurement(tmp_path: Path, has_bbox: bool) -> None:
     manifest = {
         "format_version": "0.3.0",
         "unit_count": 4,
@@ -58,6 +60,9 @@ def test_complete_measurement(tmp_path: Path) -> None:
         ),
         tmp_path / "snap.parquet",
     )
+    if not has_bbox:
+        source = pq.read_table(tmp_path / "snap.parquet").drop(["bbox"])
+        pq.write_table(source, tmp_path / "snap.parquet")
     result = run(tmp_path, receipt, "synthetic correctness test")
     assert result["status"] == "passed"
     queries = result["queries"]
