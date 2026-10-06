@@ -68,3 +68,46 @@ attributes, parent identity, missing IDs, geometry alignment, and snap fallback.
 
 Initial development with scanner `batch_readahead=0, fragment_readahead=0` stalled
 on the tiny test and was terminated. Published code uses 1 for both, without a tuning grid.
+
+## Fresh-process polygon memory follow-up
+
+`polygon_memory.py run` runs exactly one existing selection and one reader in a
+fresh process. It reuses the ordinary (group 580) and largest (group 0) IDs from
+`results/hydrobasins-isolated.json`; planning does not read geometry. Both readers
+prepare the same locator and retain the same three decoded Shapely geometries,
+selected Arrow table, and locator until the READY snapshot. The original
+`polygons()` default still decodes and discards its results.
+
+Startup excludes interpreter startup/imports. Attribute loading and locator build
+are separate from query timing. Preparation and READY record endpoint RSS and
+process-lifetime high-water RSS; these peaks are never subtracted or described as
+query-only peaks. Arrow counters are separate. Explicit candidate buffers are
+observed while the prefilter table is live, but that table is released before
+READY. Filtered native intermediate WKB and decoded GEOS allocation sizes are
+**not measured**. Selected Arrow logical/backing buffers and locator buffers are
+reported separately. Three decoded geometries remain live; they are not a byte
+allocation measurement. Read/filter and decode timers are inside total query time.
+
+Witness serialization occurs only after READY. `compare` directly compares the
+ID-sorted Arrow tables, including original WKB and WKB serialized from each retained
+decoded output. It also checks source/decoded geometry equality with zero tolerance.
+Witness SHA256 values summarize complete, framed IPC files; hashes do not replace
+exact comparisons. Geometry witnesses stay outside Git.
+
+```sh
+uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py run --data /path/to/hydrobasins --receipt /path/to/download-receipt.json --selection ordinary --method filtered --witness /private/output/ordinary-filtered.arrow --output /private/output/ordinary-filtered.json --activity 'No concurrent coordinated experiments; other laptop work unknown'
+uv run --project experiments/selective_access python experiments/selective_access/polygon_memory.py compare /private/output/ordinary-filtered.arrow /private/output/ordinary-explicit_groups.arrow --output /private/output/ordinary-equality.json
+```
+
+Repeat `run` for `ordinary`/`largest` and `filtered`/`explicit_groups`, each as a new
+process. The results directory records the exact measured order and commands.
+Use the same complete immutable local bundle; its acquisition remains excluded.
+No cache flush is performed. Wire counts and bytes are not measured. Graph, snap,
+repair, union, area computation, and complete conformance validation are excluded.
+
+Check the added files explicitly (the repository's default type-check scope omits
+experiments):
+
+```sh
+uv run --project experiments/selective_access ty check experiments/selective_access/polygon_memory.py experiments/selective_access/selective.py experiments/selective_access/test_polygon_memory.py experiments/selective_access/test_selective.py
+```
