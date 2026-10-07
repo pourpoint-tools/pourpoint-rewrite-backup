@@ -8,7 +8,7 @@ from collections.abc import Buffer, Iterable
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from time import perf_counter_ns
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 import httpx
 from flatbuffers.table import Table
@@ -73,6 +73,8 @@ def ipc_blocks(footer: bytes, file_size: int) -> list[Range]:
 
 
 class Event(TypedDict):
+    error: NotRequired[str]
+    service_request_id: NotRequired[str]
     request_id: str
     path: str
     method: str
@@ -85,7 +87,14 @@ class Event(TypedDict):
 
 
 class Transport:
-    def __init__(self, root: str, *, client: httpx.Client | None = None) -> None:
+    def __init__(
+        self,
+        root: str,
+        *,
+        client: httpx.Client | None = None,
+        identities: dict[str, tuple[int, str]] | None = None,
+    ) -> None:
+        self.identities = identities
         self.root = root.rstrip("/")
         self.client = client or httpx.Client(
             limits=httpx.Limits(
@@ -118,7 +127,27 @@ class Transport:
             assert etag is not None
             headers["If-Match"] = etag
         before = perf_counter_ns()
-        response = self.client.request(method, self.root + "/" + name, headers=headers)
+        try:
+            response = self.client.request(
+                method, self.root + "/" + name, headers=headers
+            )
+        except Exception as error:
+            with self.lock:
+                self.events.append(
+                    Event(
+                        request_id=identity,
+                        path=name,
+                        method=method,
+                        start=start,
+                        end=end,
+                        status=0,
+                        body_bytes=0,
+                        start_ns=before,
+                        end_ns=perf_counter_ns(),
+                        error=type(error).__name__,
+                    )
+                )
+            raise
         with self.lock:
             self.events.append(
                 Event(
@@ -128,6 +157,7 @@ class Transport:
                     start=start,
                     end=end,
                     status=response.status_code,
+                    service_request_id=response.headers.get("x-amz-request-id", ""),
                     body_bytes=len(response.content),
                     start_ns=before,
                     end_ns=perf_counter_ns(),
@@ -136,6 +166,8 @@ class Transport:
         return response
 
     def file(self, name: str) -> RemoteFile:
+        if self.identities is not None and name not in self.identities:
+            raise ValueError("object absent from receipt identity records")
         if name not in self.files:
             self.files[name] = RemoteFile(self, name)
         return self.files[name]
@@ -163,6 +195,11 @@ class RemoteFile(io.RawIOBase):
         self.etag = head.headers.get("ETag", "")
         if not self.etag.startswith('"') or not self.etag.endswith('"'):
             raise ValueError("strong ETag required")
+        if transport.identities is not None and transport.identities.get(name) != (
+            self.size,
+            self.etag,
+        ):
+            raise ValueError("uploaded receipt identity mismatch")
         self.position = 0
         self.sealed = False
         self.metadata: list[tuple[int, bytes]] = []
