@@ -1,0 +1,64 @@
+{
+  "single": {
+    "requests": 1,
+    "request_rows": [
+      1
+    ],
+    "unique_ids": 1
+  },
+  "small_upstream": {
+    "requests": 1,
+    "request_rows": [
+      26
+    ],
+    "unique_ids": 26
+  },
+  "larger_upstream": {
+    "requests": 1,
+    "request_rows": [
+      2250
+    ],
+    "unique_ids": 2250
+  },
+  "overlap": {
+    "requests": 3,
+    "request_rows": [
+      64,
+      64,
+      64
+    ],
+    "unique_ids": 96
+  },
+  "scattered": {
+    "requests": 1,
+    "request_rows": [
+      32
+    ],
+    "unique_ids": 32
+  },
+  "large_geometry": {
+    "requests": 1,
+    "request_rows": [
+      3
+    ],
+    "unique_ids": 3
+  },
+  "batch": {
+    "requests": 8,
+    "request_rows": [
+      1,
+      26,
+      2250,
+      64,
+      64,
+      64,
+      32,
+      3
+    ],
+    "unique_ids": 2312
+  },
+  "terminals": {
+    "small": 6120125670,
+    "larger": 6120215350
+  }
+}

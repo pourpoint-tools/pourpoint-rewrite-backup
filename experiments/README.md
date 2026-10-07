@@ -93,3 +93,9 @@ small independent cases, including a reconvergent DAG, non-row IDs, missing IDs,
 null attributes, and missing/null snap bounds. Real-data records include exact
 membership and geometry-identity checks. Expensive complete conformance validation
 is excluded. No production code, HFX artifacts, or issue scopes were changed.
+
+## Published-lookup and Arrow-layout follow-up
+
+The [catchment reader comparison](catchment_read/results/README.md) measures an
+ID-only HFX 0.3.0 baseline against the experimental published-lookup and Arrow IPC
+bundles. It does not change the earlier measurements or production contract.
