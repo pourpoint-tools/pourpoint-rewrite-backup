@@ -3,7 +3,8 @@
 Standalone research for [#19](https://github.com/pourpoint-tools/pourpoint/issues/19).
 No production reader or HFX release. #3 stays paused. The published
 [vision](../../planning/visions/2026-10-07-hfx-selective-access-reader-benchmarks.md)
-defines the comparison. Results will accompany this harness.
+defines the comparison. [Results](results/README.md) compare both changes and
+record the limits. [Machine records](results/runs.jsonl) retain each measured run.
 
 ## Run locally
 
@@ -13,7 +14,7 @@ experimental inputs, not portable dependencies or public fixtures.
 
 ```sh
 cd experiments/catchment_read
-uv sync --locked
+uv sync --locked --python 3.14.6
 uv run pytest -q
 uv run ruff check .
 uv run ruff format --check .

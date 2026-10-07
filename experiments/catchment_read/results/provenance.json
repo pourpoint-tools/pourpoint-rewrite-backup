@@ -1,0 +1,160 @@
+{
+  "measured_code_commit": "6186c56f5fcbd4f240bdcfd2ce6f157a9e91df02",
+  "candidate_contract_commit": "87158e033d3ebed748fdad00a8f924616d320940",
+  "hfx_0_3_spec_commit": "c18a8a6a115e2045080d8752279d39db2b9b29b6",
+  "unit_count": 3786228,
+  "producer_verification_sha256": "bcfd863cd30da70934b75c45b7db4d1853bc8ad3f069426dbc33f750be8c3c5d",
+  "source_artifacts": {
+    "manifest.json": {
+      "size_bytes": 1848,
+      "sha256": "81da3c17b070b80933dfd1d4e90fc9166f7f6fefedde109c1f43fe0aad1bd954",
+      "head_sha256": "81da3c17b070b80933dfd1d4e90fc9166f7f6fefedde109c1f43fe0aad1bd954",
+      "tail_sha256": "81da3c17b070b80933dfd1d4e90fc9166f7f6fefedde109c1f43fe0aad1bd954"
+    },
+    "catchments.parquet": {
+      "size_bytes": 3703151810,
+      "sha256": "b182cc56d761e2ab4064aa6aaf0883c4a64f5e2951b7ee9982a2e261f52f5bb9",
+      "head_sha256": "21df4bf502b3f034bcd7c7389d9ec379c76841d4b13136b671b67e092025f87e",
+      "tail_sha256": "3d74a04aca0c59daf9b788dde1d2203ca1748014e60970ce889904a1579d997d"
+    },
+    "ATTRIBUTION_AND_PROVENANCE.txt": {
+      "size_bytes": 5207,
+      "sha256": "4ea6f03655f61d94d7185c05df9a0b2c60c52354841017a8186f99bf7d77474f",
+      "head_sha256": "4ea6f03655f61d94d7185c05df9a0b2c60c52354841017a8186f99bf7d77474f",
+      "tail_sha256": "4ea6f03655f61d94d7185c05df9a0b2c60c52354841017a8186f99bf7d77474f"
+    },
+    "graph.parquet": {
+      "size_bytes": 112610620,
+      "sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+      "head_sha256": "c3bcb5dea2152eb549c145adce441bded405099b257475b536a59136fa4ec59e",
+      "tail_sha256": "8669157e45bc8d45f6559cac643f427d892afa4642969c75373bd1e7ea678d94"
+    },
+    "aux/snap_stems.parquet": {
+      "size_bytes": 514474930,
+      "sha256": "96163fe69efd7ba3dc8bc299680f48545aa0ca3d71ebf350545962084d9953ff",
+      "head_sha256": "3ec763c09378931adf370408966cbdbeeebf8fabaebf2674da944c876cc4f058",
+      "tail_sha256": "fae9439949a8e39ce469628f371d9ce3dca31f7246512d02a13b77fb7d2f5652"
+    },
+    "validation/validator-report.text": {
+      "size_bytes": 51,
+      "sha256": "77d45ecbe7a7b60320979bd4f7b6670b5ef21197455e419994960ae869d28a87",
+      "head_sha256": "77d45ecbe7a7b60320979bd4f7b6670b5ef21197455e419994960ae869d28a87",
+      "tail_sha256": "77d45ecbe7a7b60320979bd4f7b6670b5ef21197455e419994960ae869d28a87"
+    },
+    "validation/validator-report.json": {
+      "size_bytes": 102,
+      "sha256": "5b0ad03a4aaa71a6fd611e2d3a4ece1fda47024a419124c648b347da25fef31e",
+      "head_sha256": "5b0ad03a4aaa71a6fd611e2d3a4ece1fda47024a419124c648b347da25fef31e",
+      "tail_sha256": "5b0ad03a4aaa71a6fd611e2d3a4ece1fda47024a419124c648b347da25fef31e"
+    }
+  },
+  "candidate_manifests": {
+    "a-index": {
+      "size_bytes": 3272,
+      "sha256": "3bdb85ed4b159f82b4f909f4e4984fa06ca3a00872ae5739464f8603d633f21f",
+      "head_sha256": "3bdb85ed4b159f82b4f909f4e4984fa06ca3a00872ae5739464f8603d633f21f",
+      "tail_sha256": "3bdb85ed4b159f82b4f909f4e4984fa06ca3a00872ae5739464f8603d633f21f"
+    },
+    "b-arrow": {
+      "size_bytes": 3268,
+      "sha256": "3dbf2054dcc90378efacea4664ed8b2e41aba77c84906ce8c63ae2560535579f",
+      "head_sha256": "3dbf2054dcc90378efacea4664ed8b2e41aba77c84906ce8c63ae2560535579f",
+      "tail_sha256": "3dbf2054dcc90378efacea4664ed8b2e41aba77c84906ce8c63ae2560535579f"
+    }
+  },
+  "contract_document_sha256": {
+    "selective-access-candidates.md": "b1585fdb11f64497e97ee5b6f38f86ae46e1c4b8dce6877e5277f805db2cbc15",
+    "candidate-results.md": "6c69095939e8d5a902d229859d4b08ab0ba6ec72519e9e792ff932372f9ec8be",
+    "HFX_SPEC_0.3.0.md": "bd0cd0a5d2004481b3efee807f8c69437d86fbebaea03904ca2039ae7392e1ec"
+  },
+  "source_reference": {
+    "rows": 2312,
+    "sha256": "860a6a0ffcf215c1618f9755905242e707b7eb13accfba2b0b05e8084d52a116",
+    "source_catchments_sha256": "b182cc56d761e2ab4064aa6aaf0883c4a64f5e2951b7ee9982a2e261f52f5bb9",
+    "selections_sha256": "5d64ebbfb0b31b6f06b489db4bcee3da6176ecd86e60d61e19f29ea1e0e6e695",
+    "method": "full independent source Parquet scan; exact Arrow is_in; sorted IDs"
+  },
+  "graph_sha256": "13a41abe69ff212343cf7aba8631a4bfd79a328d8be595990652e89321a05bd7",
+  "commands": {
+    "prepare": "uv run python evidence.py prepare /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins /Users/nicolaslazaro/.prime/agent/session-artifacts/selective-reader-benchmarks/prepared",
+    "measure_and_verify": "uv run python run_local.py --source /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --candidates /Users/nicolaslazaro/.prime/agent/session-artifacts/hfx-candidates/hydrobasins --prepared /Users/nicolaslazaro/.prime/agent/session-artifacts/selective-reader-benchmarks/prepared --output /Users/nicolaslazaro/.prime/agent/session-artifacts/selective-reader-benchmarks/measurement"
+  },
+  "settings": {
+    "pre_buffer": false,
+    "use_threads": false,
+    "memory_map": false,
+    "projection": "all source columns",
+    "cache": "metadata/locator only; no lookup/data batch cache between calls",
+    "calls": 2
+  },
+  "measurement_scope": {
+    "time": "imports/selection JSON excluded; open + preparation + retrieval measured; total is phase sum, excludes counter/snapshot bookkeeping",
+    "memory": "fresh-process lifetime peaks include imports and selection IDs; no graph/reference/witness work; first output remains live during repeat; both outputs plus second-call decoded geometries live at READY",
+    "unmeasured": "physical disk I/O, transport/wire bytes, native decoded allocation size, Python/reader metadata retained sizes, phase-only peak RSS",
+    "io": "unbuffered local FileIO read/readinto calls and bytes returned, including metadata and bounded fingerprints; not syscall/disk/network counts",
+    "cache_state": "uncontrolled filesystem cache, not cold disk"
+  },
+  "versions": {
+    "pyarrow": "25.0.1",
+    "numpy": "2.5.3",
+    "psutil": "7.2.2",
+    "shapely": "2.2.0"
+  },
+  "python": "3.14.6",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "run_count": 42,
+  "witness_checks": 192,
+  "correctness": "passed exact source equality for every first/repeat output, including each batch request",
+  "raw_artifacts": "/Users/nicolaslazaro/.prime/agent/session-artifacts/selective-reader-benchmarks",
+  "raw_correctness_sha256": "c110cfe2fc1852162e62a4a70054630c58e8eefbb8e9cd11525fe0027d722b05",
+  "schedule_sha256": "ecff013e472d9fc132df97e03ce6d4d6181c86ef0ff810d37dbda379802405ae",
+  "no_coordinated_competing_benchmarks": true,
+  "filesystem_cache": "uncontrolled; full-source reference scan preceded measurement",
+  "candidate_consumed_artifacts": {
+    "a-index": {
+      "catchments.parquet": {
+        "size_bytes": 3703151810,
+        "sha256": "b182cc56d761e2ab4064aa6aaf0883c4a64f5e2951b7ee9982a2e261f52f5bb9",
+        "head_sha256": "21df4bf502b3f034bcd7c7389d9ec379c76841d4b13136b671b67e092025f87e",
+        "tail_sha256": "3d74a04aca0c59daf9b788dde1d2203ca1748014e60970ce889904a1579d997d"
+      },
+      "lookup-directory.json": {
+        "size_bytes": 6292,
+        "sha256": "fd1c6235ce74038d8821014448fa4f1ad2f0f6da84029fe9f1c813be99458a5d",
+        "head_sha256": "fd1c6235ce74038d8821014448fa4f1ad2f0f6da84029fe9f1c813be99458a5d",
+        "tail_sha256": "fd1c6235ce74038d8821014448fa4f1ad2f0f6da84029fe9f1c813be99458a5d"
+      },
+      "lookup.arrow": {
+        "size_bytes": 60595826,
+        "sha256": "d4224effae1791fca8356ba7c8d044d836fa049a64ffdcccb5ce877f2fc291e6",
+        "head_sha256": "68f551a355213b2b68c2c491f8166e77f56df9cf688249a187204c34802b012a",
+        "tail_sha256": "434dd9e28eed7a5f49648d7a39bbd8788170b8b9f77a1205a250ee9c5453e5e5"
+      }
+    },
+    "b-arrow": {
+      "catchments.arrow": {
+        "size_bytes": 2836084186,
+        "sha256": "8f2433d54b6137063066ba332e86237004db37481314cf8be44188dd11b68379",
+        "head_sha256": "be5e89228e7a2d2ed78ab876bd0339db9677fce980258672ae72430a79c600ba",
+        "tail_sha256": "3a407ea124706e5dbe1f420e449369f8d48d1a467ec7afb86ac13d50ee2feb07"
+      },
+      "lookup-directory.json": {
+        "size_bytes": 6292,
+        "sha256": "fd1c6235ce74038d8821014448fa4f1ad2f0f6da84029fe9f1c813be99458a5d",
+        "head_sha256": "fd1c6235ce74038d8821014448fa4f1ad2f0f6da84029fe9f1c813be99458a5d",
+        "tail_sha256": "fd1c6235ce74038d8821014448fa4f1ad2f0f6da84029fe9f1c813be99458a5d"
+      },
+      "lookup.arrow": {
+        "size_bytes": 60595826,
+        "sha256": "8fb4c016e253debbecc9f63d1164cf41ff83f09e17aaf2fa351d531100702ad8",
+        "head_sha256": "8fad080db3c94706c041e52717e91761699e175ee6d8564f15d9c98758ba77d1",
+        "tail_sha256": "f9770080295cb433148a37703fb44b9dd86f95d1f4000d4b88c1af6bbdd7f1eb"
+      }
+    }
+  },
+  "hardware": {
+    "cpu": "Apple M4 Max",
+    "ram_bytes": 68719476736,
+    "power_thermal_state": "uncontrolled"
+  }
+}

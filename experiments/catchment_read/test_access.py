@@ -130,3 +130,52 @@ def test_bounded_identity_rejects_changed_artifact(
         CatchmentReader(path, experimental=True) as reader,
     ):
         reader.prepare()
+
+
+def test_baseline_preparation_projects_only_ids(
+    source: tuple[Path, pa.Table], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import Mock
+
+    with CatchmentReader(source[0]) as reader:
+        assert reader.parquet is not None
+        read = Mock(wraps=reader.parquet.read)
+        monkeypatch.setattr(reader.parquet, "read", read)
+        reader.prepare()
+        read.assert_called_once_with(columns=["id"], use_threads=False)
+
+
+def test_candidate_io_boundary_has_no_hidden_lookup_or_block_scans(
+    candidate: tuple[Path, pa.Table],
+) -> None:
+    from measure import io_delta
+
+    with CatchmentReader(candidate[0], experimental=True) as reader:
+        before = reader.io_counts()
+        reader.prepare()
+        prep = io_delta(reader.io_counts(), before)
+        data_name = reader.manifest["catchments"]
+        size = (candidate[0] / data_name).stat().st_size
+        assert prep[data_name] == {"reads": 2, "bytes": 2 * min(65536, size)}
+        # Bounded lookup fingerprints plus the two IPC footer reads; no get_batch.
+        assert prep["lookup.arrow"]["reads"] == 4
+        before = reader.io_counts()
+        reader.retrieve([[20, 3, 20], [3]])
+        first = io_delta(reader.io_counts(), before)
+        # Both IDs are in lookup batch 0; repeated caller IDs share this one read.
+        assert first["lookup.arrow"]["reads"] == 1
+        if reader.parquet is not None:
+            metadata = reader.parquet.metadata
+            assert first[data_name] == {
+                "reads": 2 * metadata.num_columns,
+                "bytes": sum(
+                    metadata.row_group(g).column(c).total_compressed_size
+                    for g in [0, 1]
+                    for c in range(metadata.num_columns)
+                ),
+            }
+        else:
+            assert first[data_name]["reads"] == 2
+        before = reader.io_counts()
+        reader.retrieve([[20, 3, 20], [3]])
+        assert io_delta(reader.io_counts(), before) == first
