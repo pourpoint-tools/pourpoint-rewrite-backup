@@ -7,6 +7,7 @@ import importlib.metadata
 import json
 import platform
 import resource
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
@@ -69,11 +70,19 @@ def io_delta(
 
 
 def measure(
-    root: Path, requests: list[list[int]], *, experimental: bool
+    root: Path,
+    requests: list[list[int]],
+    *,
+    experimental: bool,
+    reader_factory: Callable[[Path, bool], CatchmentReader] | None = None,
 ) -> tuple[Measurement, list[list[pa.Table]]]:
     initial = memory()
     start = perf_counter()
-    reader = CatchmentReader(root, experimental=experimental)
+    reader = (
+        CatchmentReader(root, experimental=experimental)
+        if reader_factory is None
+        else reader_factory(root, experimental)
+    )
     opened = perf_counter() - start
     with reader:
         previous = reader.io_counts()
