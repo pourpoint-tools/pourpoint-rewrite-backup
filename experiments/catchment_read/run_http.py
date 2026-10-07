@@ -11,16 +11,24 @@ from pathlib import Path
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=Path, required=True)
-    parser.add_argument("--candidates", type=Path, required=True)
+    parser.add_argument("--source", required=True)
+    parser.add_argument("--candidates", required=True)
+    parser.add_argument("--receipt", type=Path)
+    parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--prepared", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if subprocess.check_output(["git", "status", "--porcelain"], text=True).strip():
         raise RuntimeError("pin clean measured code before running")
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    args.source = args.source.resolve()
-    args.candidates = args.candidates.resolve()
+    args.source = (
+        args.source.rstrip("/") if args.receipt else str(Path(args.source).resolve())
+    )
+    args.candidates = (
+        args.candidates.rstrip("/")
+        if args.receipt
+        else str(Path(args.candidates).resolve())
+    )
     args.prepared = args.prepared.resolve()
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
@@ -41,6 +49,21 @@ def main() -> None:
         or provenance["reference_sha256"] != provenance["reference"]["sha256"]
     ):
         raise ValueError("prepared evidence changed")
+    if args.receipt:
+        from s3_access import validate_receipt
+
+        args.receipt = args.receipt.resolve()
+        receipt = json.loads(args.receipt.read_text())
+        inherited_path = Path(__file__).with_name("results") / "provenance.json"
+        inherited = json.loads(inherited_path.read_text())
+        validate_receipt(receipt, args.source, args.candidates, inherited)
+        if provenance["reference"] != inherited["source_reference"]:
+            raise ValueError("independent reference differs from original experiment")
+        provenance.update(
+            receipt_sha256=digest(args.receipt),
+            receipt=receipt,
+            inherited_provenance_sha256=digest(inherited_path),
+        )
     (args.output / "provenance.json").write_text(
         json.dumps(provenance, indent=2) + "\n"
     )
@@ -59,11 +82,13 @@ def main() -> None:
         raise ValueError("expected the seven unchanged prepared workloads")
     paths = {
         "0.3.0": args.source,
-        "a-index": args.candidates / "candidate-a-index",
-        "b-arrow": args.candidates / "candidate-b-arrow",
+        "a-index": args.candidates + "/candidate-a-index",
+        "b-arrow": args.candidates + "/candidate-b-arrow",
     }
     schedule: list[dict[str, object]] = []
-    for iteration in range(4):
+    if args.smoke:
+        workloads = ["single"]
+    for iteration in range(1 if args.smoke else 2 if args.receipt else 4):
         delay = 0 if iteration < 2 else 0.02
         repetition = iteration % 2
         for workload_index, workload in enumerate(workloads):
@@ -92,6 +117,8 @@ def main() -> None:
                     "--code-commit",
                     commit,
                 ]
+                if args.receipt:
+                    command.extend(["--receipt", str(args.receipt)])
                 if kind != "0.3.0":
                     command.append("--experimental")
                 schedule.append(

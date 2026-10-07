@@ -15,8 +15,14 @@ from http_access import RemoteFile, Transport, ipc_blocks, merge_ranges
 class HttpCatchmentReader(CatchmentReader):
     """Keep metadata across calls, but discard fetched lookup and data windows."""
 
-    def __init__(self, root: str, *, experimental: bool = False) -> None:
-        self.transport = Transport(root)
+    def __init__(
+        self,
+        root: str,
+        *,
+        experimental: bool = False,
+        transport: Transport | None = None,
+    ) -> None:
+        self.transport = transport if transport is not None else Transport(root)
         self.block_ranges: dict[str, list[tuple[int, int]]] = {}
         try:
             super().__init__(Path("."), experimental=experimental)

@@ -20,6 +20,38 @@ independent reference. It compares localhost with a clearly simulated 20 ms
 per-request service delay. Neither run establishes cloud performance.
 [HTTP results](http_results/README.md) are separate from the unchanged local results below.
 
+## Real Hetzner follow-up
+
+[Real-cloud results](hetzner_results/README.md) compare the unchanged candidates.
+
+The same HTTP worker accepts `--receipt` for profile-authenticated Hetzner reads.
+Botocore resolves `hetzner-pourpoint` and signs each HTTPX HEAD/GET. There is no SDK
+object transport, upload, listing, redirect, retry, or presigned URL. Receipt
+SHA-256 identities must match the original input provenance. Each consumed object
+HEAD must match its verified receipt size and ETag before any bytes are trusted;
+every GET uses If-Match and the existing strict 206/range checks. ETags are not
+SHA-256 hashes. No full remote hashing occurs at startup.
+
+From this directory, set `PREPARED`, `RECEIPT`, and `OUTPUT` to external artifact
+paths, then run from a clean code commit:
+
+```sh
+uv run python run_http.py \
+  --source s3://pourpoint-hfx/hfx/hydrobasins-pfaf1-12-nested-global-snap-2026-07-20/ \
+  --candidates s3://pourpoint-hfx/experiments/hfx-selective-access/20261007T201153Z-74782fc0971b/ \
+  --prepared "$PREPARED" --receipt "$RECEIPT" --output "$OUTPUT" --smoke
+```
+
+Smoke runs all three readers on the unchanged single selection. Inspect its exact
+source witness verification and accounting before rerunning without `--smoke` at
+a new output path. Full mode runs 42 sequential fresh workers: seven workloads,
+three readers, two varied-order repetitions. No artificial latency is added.
+Lazy authentication imports, profile setup and all remote work are charged. Base
+imports and local selection/receipt parsing are excluded. Records save only the
+credential provider method, never credential values. Client overlap is measured; service overlap is unknown.
+Failed workers preserve sanitized attempts and stop the run. Failed response body
+bytes are unknown, so their timings are invalid and must not be mixed into results.
+
 ## Run locally
 
 Use the complete immutable local HydroBASINS source and verified candidate bundles.

@@ -9,6 +9,7 @@ dependencies = [
     "psutil>=7",
     "httpx>=0.28.1",
     "flatbuffers>=25.12.19",
+    "botocore>=1.43.109",
 ]
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.12", "ty>=0.0.1a20"]
