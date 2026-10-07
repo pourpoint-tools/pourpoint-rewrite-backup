@@ -2,7 +2,14 @@
 name = "pourpoint-catchment-read-experiment"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = ["pyarrow==25.0.1", "numpy>=2", "shapely>=2", "psutil>=7"]
+dependencies = [
+    "pyarrow==25.0.1",
+    "numpy>=2",
+    "shapely>=2",
+    "psutil>=7",
+    "httpx>=0.28.1",
+    "flatbuffers>=25.12.19",
+]
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.12", "ty>=0.0.1a20"]
 [tool.ruff]

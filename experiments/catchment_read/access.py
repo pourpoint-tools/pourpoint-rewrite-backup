@@ -6,10 +6,13 @@ import hashlib
 import io
 import json
 from collections import defaultdict
-from collections.abc import Buffer
+from collections.abc import Buffer, Iterator
 from pathlib import Path
 from types import TracebackType
-from typing import Self
+from typing import TYPE_CHECKING, Self
+
+if TYPE_CHECKING:
+    from http_access import RemoteFile
 
 import numpy as np
 import numpy.typing as npt
@@ -83,7 +86,7 @@ class CatchmentReader:
             self.close()
             raise
 
-    def file(self, name: str) -> CountedFile:
+    def file(self, name: str) -> CountedFile | RemoteFile:
         if name not in self.files:
             self.files[name] = CountedFile(self.root / name)
         return self.files[name]
@@ -159,15 +162,15 @@ class CatchmentReader:
             maxima = [entry["max_id"] for entry in self.directory]
             batch_numbers = np.searchsorted(maxima, requested)
             read_batches: list[int] = []
-            for batch_number in np.unique(batch_numbers):
-                if batch_number == len(self.directory):
-                    raise KeyError("absent catchment ID")
+            numbers = [int(n) for n in np.unique(batch_numbers)]
+            if numbers and numbers[-1] == len(self.directory):
+                raise KeyError("absent catchment ID")
+            for batch_number, batch in self.lookup_batches(numbers):
                 entry = self.directory[int(batch_number)]
                 indices = np.flatnonzero(batch_numbers == batch_number)
                 wanted = requested[indices]
                 if np.any(wanted < entry["min_id"]):
                     raise KeyError("absent catchment ID")
-                batch = self.lookup.get_batch(int(batch_number))
                 read_batches.append(int(batch_number))
                 ids = batch["id"].to_numpy()
                 found = np.searchsorted(ids, wanted)
@@ -186,6 +189,21 @@ class CatchmentReader:
         starts = np.concatenate(([0], self.ends[:-1]))
         return blocks, physical - starts[blocks], []
 
+    def lookup_batches(
+        self, numbers: list[int]
+    ) -> Iterator[tuple[int, pa.RecordBatch]]:
+        assert self.lookup is not None
+        for number in numbers:
+            yield number, self.lookup.get_batch(number)
+
+    def data_tables(self, numbers: list[int]) -> Iterator[tuple[int, pa.Table]]:
+        for number in numbers:
+            if self.arrow is not None:
+                yield number, pa.Table.from_batches([self.arrow.get_batch(number)])
+            else:
+                assert self.parquet is not None
+                yield number, self.parquet.read_row_group(number, use_threads=False)
+
     def retrieve(
         self, requests: list[list[int]]
     ) -> tuple[list[pa.Table], dict[str, object]]:
@@ -202,12 +220,8 @@ class CatchmentReader:
         unique_order: list[int] = []
         materialized = 0
         max_backing = 0
-        for block, addresses in sorted(grouped.items()):
-            if self.arrow is not None:
-                table = pa.Table.from_batches([self.arrow.get_batch(block)])
-            else:
-                assert self.parquet is not None
-                table = self.parquet.read_row_group(block, use_threads=False)
+        for block, table in self.data_tables(sorted(grouped)):
+            addresses = grouped[block]
             materialized += table.nbytes
             max_backing = max(max_backing, table.get_total_buffer_size())
             selected = table.take([row for _, row in addresses])

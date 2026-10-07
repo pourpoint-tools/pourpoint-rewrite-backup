@@ -6,6 +6,20 @@ No production reader or HFX release. #3 stays paused. The published
 defines the comparison. [Results](results/README.md) compare both changes and
 record the limits. [Machine records](results/runs.jsonl) retain each measured run.
 
+## HTTP range follow-up
+
+The HTTP experiment serves the unchanged bundles on `127.0.0.1` only.
+It uses four pooled connections and explicit bounded range prefetch before Arrow
+decoding. The same 64 KiB gap and 8 MiB coalescing target apply to all readers;
+oversized source blocks remain whole. No lookup or data cache survives a call.
+All HEAD, manifest, schema/footer, directory, fingerprint, lookup and data reads
+are charged. Completed client/server request IDs and body-byte counts reconcile.
+
+`run_http.py` runs sequential fresh workers with the original selections and
+independent reference. It compares localhost with a clearly simulated 20 ms
+per-request service delay. Neither run establishes cloud performance.
+[HTTP results](http_results/README.md) are separate from the unchanged local results below.
+
 ## Run locally
 
 Use the complete immutable local HydroBASINS source and verified candidate bundles.
