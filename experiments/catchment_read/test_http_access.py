@@ -120,7 +120,7 @@ def test_prefetch_four_actual_overlapping_requests_and_no_data_cache() -> None:
         transport.close()
 
 
-def test_content_encoding_and_weak_identity_rejected() -> None:
+def test_weak_identity_rejected() -> None:
     import httpx
 
     from http_access import Transport

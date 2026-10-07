@@ -1,0 +1,115 @@
+{
+  "measured_code_commit": "35032fccf5740ba31a8cba53959f48e21f986db3",
+  "base_commit": "dca86b2bfe95432d17692aefee58613933707a22",
+  "candidate_contract_commit": "87158e033d3ebed748fdad00a8f924616d320940",
+  "hfx_0_3_spec_commit": "c18a8a6a115e2045080d8752279d39db2b9b29b6",
+  "contract_document_sha256": {
+    "selective-access-candidates.md": "b1585fdb11f64497e97ee5b6f38f86ae46e1c4b8dce6877e5277f805db2cbc15",
+    "candidate-results.md": "6c69095939e8d5a902d229859d4b08ab0ba6ec72519e9e792ff932372f9ec8be",
+    "HFX_SPEC_0.3.0.md": "bd0cd0a5d2004481b3efee807f8c69437d86fbebaea03904ca2039ae7392e1ec"
+  },
+  "input_identity_record": "../results/provenance.json",
+  "identity_scope": "Full source/candidate digests inherit prior independent producer verification; this run preserves trusted immutable inputs and checks bounded candidate fingerprints plus pinned stat ETags. No new full-source hash scan.",
+  "source": "/Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins",
+  "candidates": "/Users/nicolaslazaro/.prime/agent/session-artifacts/hfx-candidates/hydrobasins",
+  "prepared": "/Users/nicolaslazaro/.prime/agent/session-artifacts/selective-reader-benchmarks/prepared",
+  "source_reference": {
+    "rows": 2312,
+    "sha256": "860a6a0ffcf215c1618f9755905242e707b7eb13accfba2b0b05e8084d52a116",
+    "source_catchments_sha256": "b182cc56d761e2ab4064aa6aaf0883c4a64f5e2951b7ee9982a2e261f52f5bb9",
+    "selections_sha256": "5d64ebbfb0b31b6f06b489db4bcee3da6176ecd86e60d61e19f29ea1e0e6e695",
+    "method": "full independent source Parquet scan; exact Arrow is_in; sorted IDs"
+  },
+  "raw_artifacts": "/Users/nicolaslazaro/.prime/agent/session-artifacts/http-catchment-benchmarks/measurement",
+  "command": "uv run --project experiments/catchment_read python experiments/catchment_read/run_http.py --source /Users/nicolaslazaro/.prime/agent/session-artifacts/01a1129b-ff00-7678-9ab2-c76e53fe810a/vector-access/data/hydrobasins --candidates /Users/nicolaslazaro/.prime/agent/session-artifacts/hfx-candidates/hydrobasins --prepared /Users/nicolaslazaro/.prime/agent/session-artifacts/selective-reader-benchmarks/prepared --output /Users/nicolaslazaro/.prime/agent/session-artifacts/http-catchment-benchmarks/measurement",
+  "run_count": 84,
+  "witness_checks": 384,
+  "correctness": "passed exact source Arrow equality: all attributes, nulls, schema metadata, WKB, order and duplicates",
+  "correctness_sha256": "039a65276890ec81d629ca355c3041c958e408ee56768a8371829aa9947a752f",
+  "schedule_sha256": "8af86118bee9b6528bbe6bde4b03a2a1ec421b4e65c155b13fb4f24a26683fea",
+  "versions": {
+    "pyarrow": "25.0.1",
+    "numpy": "2.5.3",
+    "psutil": "7.2.2",
+    "shapely": "2.2.0",
+    "httpx": "0.28.1",
+    "flatbuffers": "25.12.19"
+  },
+  "python": "3.14.6",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "hardware": {
+    "cpu": "Apple M4 Max",
+    "ram_bytes": 68719476736,
+    "power_thermal_state": "User confirmed awake and plugged in; other laptop activity and thermal state uncontrolled"
+  },
+  "settings": {
+    "pre_buffer": false,
+    "use_threads": false,
+    "memory_map": false,
+    "projection": "all source columns",
+    "calls": 2,
+    "cache": "metadata/locator only; no lookup/data cache between calls",
+    "workers": 4,
+    "coalescing_gap_bytes": 65536,
+    "merged_range_limit_bytes": 8388608
+  },
+  "scope": {
+    "time": "imports, selections, server startup excluded; same local measure phase boundaries",
+    "memory": "fresh process including loopback server threads/buffers; initial snapshot after server startup; no graph/reference/witness work; first output retained during repeat; both outputs and second-call geometries live at READY",
+    "io": "HTTP response body bytes and completed requests, not headers/TCP/TLS bytes; server payload bytes accepted by socket",
+    "overlap": "endpoint sweep of completed request timestamps; client and server measured separately",
+    "cache_state": "uncontrolled filesystem cache, fresh HTTP client per process",
+    "latency": "loopback plus fixed simulated per-request delay; not a production object-store model"
+  },
+  "pinned_objects": {
+    "0.3.0": {
+      "manifest.json": {
+        "size_bytes": 1848,
+        "etag": "\"18dc06564db71767-738-13375267\""
+      },
+      "catchments.parquet": {
+        "size_bytes": 3703151810,
+        "etag": "\"18dc067597750672-dcb99cc2-13375da9\""
+      }
+    },
+    "a-index": {
+      "manifest.json": {
+        "size_bytes": 3272,
+        "etag": "\"18dc4b58aa951800-cc8-134e870d\""
+      },
+      "catchments.parquet": {
+        "size_bytes": 3703151810,
+        "etag": "\"18dc4b5825e8c8ce-dcb99cc2-134e86ff\""
+      },
+      "lookup.arrow": {
+        "size_bytes": 60595826,
+        "etag": "\"18dc4b589b1fcd07-39c9e72-134e870b\""
+      },
+      "lookup-directory.json": {
+        "size_bytes": 6292,
+        "etag": "\"18dc4b589b5d1527-1894-134e870c\""
+      }
+    },
+    "b-arrow": {
+      "manifest.json": {
+        "size_bytes": 3268,
+        "etag": "\"18dc4b5c60aa3ed5-cc4-134e8728\""
+      },
+      "catchments.arrow": {
+        "size_bytes": 2836084186,
+        "etag": "\"18dc4b5bf4b2b262-a90b35da-134e8717\""
+      },
+      "lookup.arrow": {
+        "size_bytes": 60595826,
+        "etag": "\"18dc4b5c50d840f4-39c9e72-134e8726\""
+      },
+      "lookup-directory.json": {
+        "size_bytes": 6292,
+        "etag": "\"18dc4b5c50e7f88c-1894-134e8727\""
+      }
+    }
+  },
+  "no_coordinated_competing_benchmarks": true,
+  "utc_first_record": "2026-10-07T19:55:38.023395+00:00",
+  "utc_last_record": "2026-10-07T19:58:36.204823+00:00"
+}

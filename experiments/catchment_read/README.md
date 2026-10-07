@@ -18,7 +18,7 @@ are charged. Completed client/server request IDs and body-byte counts reconcile.
 `run_http.py` runs sequential fresh workers with the original selections and
 independent reference. It compares localhost with a clearly simulated 20 ms
 per-request service delay. Neither run establishes cloud performance.
-HTTP results are separate from the unchanged local results below.
+[HTTP results](http_results/README.md) are separate from the unchanged local results below.
 
 ## Run locally
 
