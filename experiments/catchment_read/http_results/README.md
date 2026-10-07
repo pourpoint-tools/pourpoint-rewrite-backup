@@ -49,11 +49,11 @@ B's smaller blocks still win the expensive cases despite extra requests:
 | Selection | A / B requests per call | A / B response body MB | A / B repeated seconds, simulated delay |
 | --- | --- | --- | --- |
 | Scattered | 56 / 57 | 346.80 / 117.64 | 0.952 / 0.687 |
-| Large geometry | 3 / 5 | 172.26 / 17.79 | 0.315 / 0.108 |
-| Combined batch | 57 / 61 | 365.97 / 148.47 | 0.984 / 0.793 |
+| Large geometry | 3 / 5 | 172.26 / 17.79 | 0.316 / 0.107 |
+| Combined batch | 57 / 61 | 365.97 / 148.47 | 0.984 / 0.792 |
 
 For a repeated single-unit call under simulated delay, 0.3.0/A/B take
-0.038/0.069/0.068 seconds. Once baseline locator construction is already paid,
+0.037/0.069/0.068 seconds. Once baseline locator construction is already paid,
 it needs one data request; A/B need lookup then data. Small-read B is not a clear
 latency winner over A. Fresh-reader gains and steady-state gains are different.
 
