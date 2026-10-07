@@ -22,6 +22,8 @@ per-request service delay. Neither run establishes cloud performance.
 
 ## Real Hetzner follow-up
 
+[Real-cloud results](hetzner_results/README.md) compare the unchanged candidates.
+
 The same HTTP worker accepts `--receipt` for profile-authenticated Hetzner reads.
 Botocore resolves `hetzner-pourpoint` and signs each HTTPX HEAD/GET. There is no SDK
 object transport, upload, listing, redirect, retry, or presigned URL. Receipt
