@@ -245,10 +245,14 @@ def main() -> None:
     )
     if receipt is not None:
         from evidence import digest
+        from s3_access import S3Auth
 
+        auth = reader.transport.client.auth
+        assert isinstance(auth, S3Auth)
+        document["credential_method"] = auth.credentials.method
         document["receipt_sha256"] = digest(args.receipt)
         document["scope"] = {
-            "time": "imports/selections/receipt parsing excluded; profile resolution, signing/client creation and all remote work charged to open/prepare/calls; through-first sums open+prepare+call-0",
+            "time": "base imports/selections/receipt parsing excluded; lazy authentication imports, profile resolution, signing/client creation and all remote work charged to open/prepare/calls; through-first sums open+prepare+call-0",
             "memory": "fresh process; same retained outputs and process-lifetime peaks as local experiment; witnesses after snapshots",
             "io": "completed HTTP response body bytes, not headers/TCP/TLS bytes; every HEAD/GET charged; no retries or redirects; botocore only resolves profile and signs, no SDK object transport",
             "overlap": "client in-flight intervals only; no service logs, server overlap unknown",

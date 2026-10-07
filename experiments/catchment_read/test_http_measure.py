@@ -79,7 +79,15 @@ def test_cloud_mode_keeps_phases_without_claiming_server_overlap(
     with RangeServer({"data": root}) as server:
 
         def transport(_root: str, _receipt: s3_access.Receipt) -> Transport:
-            return Transport(server.url + "/data")
+            import httpx
+            from botocore.credentials import Credentials
+
+            return Transport(
+                server.url + "/data",
+                client=httpx.Client(
+                    auth=s3_access.S3Auth(Credentials("test", "secret"))
+                ),
+            )
 
         monkeypatch.setattr(s3_access, "cloud_transport", transport)
         monkeypatch.setattr(

@@ -44,8 +44,9 @@ Smoke runs all three readers on the unchanged single selection. Inspect its exac
 source witness verification and accounting before rerunning without `--smoke` at
 a new output path. Full mode runs 42 sequential fresh workers: seven workloads,
 three readers, two varied-order repetitions. No artificial latency is added.
-Profile setup and all remote work are charged. Imports and local selection/receipt
-parsing are excluded. Client overlap is measured; service overlap is unknown.
+Lazy authentication imports, profile setup and all remote work are charged. Base
+imports and local selection/receipt parsing are excluded. Records save only the
+credential provider method, never credential values. Client overlap is measured; service overlap is unknown.
 Failed workers preserve sanitized attempts and stop the run. Failed response body
 bytes are unknown, so their timings are invalid and must not be mixed into results.
 
