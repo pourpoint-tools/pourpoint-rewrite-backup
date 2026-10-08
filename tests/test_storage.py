@@ -28,6 +28,7 @@ class OriginState(TypedDict):
     requests: list[tuple[str | None, int, str | None, str | None]]
     files: NotRequired[dict[str, bytes]]
     signed: NotRequired[list[bool]]
+    cache_controls: NotRequired[list[str | None]]
 
 
 @pytest.fixture
@@ -48,6 +49,7 @@ def origin() -> Iterator[tuple[str, OriginState]]:
             self.end_headers()
 
         def do_GET(self) -> None:
+            state.setdefault("cache_controls", []).append(self.headers.get("Cache-Control"))
             data = self.data()
             state.setdefault("signed", []).append(self.headers.get("Authorization", "").startswith("AWS4-HMAC-SHA256"))
             mode = state["mode"]
@@ -289,3 +291,79 @@ def test_graph_change_during_verification_rejected(tmp_path: Path, monkeypatch: 
     monkeypatch.setattr(hashlib, "file_digest", changed_digest)
     with Source(tmp_path) as source, pytest.raises(ValueError, match="changed during verification"):
         source.graph_path(tmp_path / "cache", "graph.parquet", fingerprint(data))
+
+
+def test_http_manifest_revalidation_and_snapshot(origin: tuple[str, OriginState]) -> None:
+    url, state = origin
+    state["data"] = b'{"snapshot": 1}'
+    with Source(url, storage_options={"client_options": {"allow_http": True}}) as source:
+        assert source.read_json("manifest.json") == {"snapshot": 1}
+        state["data"] = b'{"snapshot": 2}'
+        assert source.read_json("manifest.json") == {"snapshot": 1}
+    with Source(url, storage_options={"client_options": {"allow_http": True}}) as source:
+        assert source.read_json("manifest.json") == {"snapshot": 2}
+    assert state["cache_controls"] == ["no-cache", "no-cache"]
+
+
+# Rasterio 1.5.2's Cython callback also emits an unraisable diagnostic when
+# obstore rejects a changed ETag. The operation still MUST raise RasterioIOError.
+@pytest.mark.filterwarnings(
+    "ignore:Exception ignored in.*rasterio._err.chaining_error_handler:pytest.PytestUnraisableExceptionWarning"
+)
+@pytest.mark.parametrize("protocol", ["http", "s3"])
+def test_raster_transport_pins_reuse_and_mutation(origin: tuple[str, OriginState], hfx: Path, protocol: str) -> None:
+    import numpy as np
+    from conftest import add_pair
+    from rasterio.errors import RasterioIOError
+    from rasterio.transform import from_origin
+
+    from pourpoint import Dataset
+
+    # Uncompressed tiles ensure the later selection is outside opener readahead.
+    add_pair(
+        hfx,
+        direction=np.full((1024, 1024), 8, dtype="uint8"),
+        accumulation=np.full((1024, 1024), 16777217, dtype="int32"),
+        transform=from_origin(0, 1024, 1, 1),
+    )
+    url, state = origin
+    state["files"] = {path.name: path.read_bytes() for path in hfx.iterdir() if path.is_file()}
+    options = {"client_options": {"allow_http": True}, "retry_config": {"max_retries": 0}}
+    root = url
+    if protocol == "s3":
+        root = "s3://fixture/root"
+        options["config"] = {
+            "endpoint": url,
+            "region": "us-east-1",
+            "access_key_id": "fixture",
+            "secret_access_key": "fixture",
+        }
+    with Dataset.open(root, storage_options=options) as data:
+        request = data.rasters.prepare((0, 1023, 1, 1024))
+        result = data.rasters.read(request)
+        assert result.accumulation[0, 0] == 16777217
+        count = len(state["requests"])
+        state["mode"] = "etag"
+        # Cached original bytes are still a coherent pinned snapshot.
+        assert data.rasters.read(request).direction[0, 0] == 1
+        assert len(state["requests"]) == count
+        with pytest.raises((RasterioIOError, ValueError, OSError), match="[Rr]ead|ETag|changed|IReadBlock"):
+            data.rasters.read(data.rasters.prepare((500, 500, 501, 501)))
+    assert all(item[2:] == ('"v1"', "identity") for item in state["requests"])
+    assert all(signed == (protocol == "s3") for signed in state["signed"])
+    assert sum(item[1] for item in state["requests"]) < 1024 * 1024
+
+
+def test_independent_cursors_accounting_and_close(tmp_path: Path) -> None:
+    data = b"x" * 200000
+    (tmp_path / "file").write_bytes(data)
+    with Source(tmp_path) as source:
+        with (
+            source.raster_file("file", fingerprint(data)) as first,
+            source.raster_file("file", fingerprint(data)) as second,
+        ):
+            first.seek(50000)
+            assert first.read(1) == b"x"
+            assert second.tell() == 0
+            assert source.buffer_bytes >= 65536
+        assert source.buffer_bytes == 0

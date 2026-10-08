@@ -20,6 +20,8 @@ with Dataset.open(
 ```
 
 See [runtime access](docs/runtime.md) for costs, candidate APIs, integrity and lifetime.
+[Native-grid raster access](docs/rasters.md) supplies prepared paired direction and
+accumulation windows; it does not implement terminal refinement.
 GRIT source data carry CC BY-NC 4.0 terms and attribution in their bundle; this
 repository's code license does not replace source-data terms.
 
