@@ -1,7 +1,7 @@
 # Native-grid raster access
 
-HFX 0.4.0 optionally declares `hfx.aux.d8_raster.v2` pairs in the root
-manifest. The retained source manifest is provenance, not a discovery channel.
+The [HFX 0.4.0 raster contract](https://github.com/pourpoint-tools/hfx/blob/bb7ea1ddb0c83e2a38968450e7163a921d5e3a4f/docs/v0.4.0/raster-data.md)
+optionally declares `hfx.aux.d8_raster.v2` pairs in the root manifest. The retained source manifest is provenance, not a discovery channel.
 Vector-only bundles remain valid. Raster headers are not opened for vector use.
 
 ```python
@@ -14,7 +14,9 @@ with Dataset.open("/path/to/hfx") as dataset:
 ```
 
 Bounds default to EPSG:4326. Pass `crs="EPSG:8857"` for bounds already on that
-native CRS. Requests have positive area and must not wrap the antimeridian.
+native CRS. Bounds use the supplied CRS's coordinate units, including geographic
+CRSs expressed in grads rather than degrees. Requests have positive area and
+must use a nonwrapping envelope (no antimeridian wrap).
 Preparation transforms all four envelope edges with 101 interior samples per
 edge, not just two opposite corners. It uses the declared CRS of each pair,
 then encloses the transformed envelope in whole native cells. This is conservative
@@ -103,7 +105,13 @@ even on cached reads. Bounded checks are not whole-file integrity proofs.
 caller-owned result arrays. Array bytes and process RSS are different quantities.
 Rasterio 1.5.2 can also emit an unraisable Cython diagnostic when a range callback
 rejects changed data. The read still fails; Pourpoint does not suppress production
-errors or accept data from that response.
+errors or accept data from that response. Upstream source inspection found that
+the [Python read callback](https://github.com/rasterio/rasterio/blob/1.5.2/rasterio/_vsiopener.pyx#L274-L280)
+does not catch Python read errors, and
+[`stack_errors`](https://github.com/rasterio/rasterio/blob/1.5.2/rasterio/_err.pyx#L330-L348)
+does not protect error-handler cleanup with `finally`. The tests require failure
+and verify later cached reads remain usable; they do not repair that upstream
+handler state.
 
 GRIT data retain their bundle's CC BY-NC 4.0 license, attribution, provenance and
 source caveats. Pourpoint's code license does not replace those terms.

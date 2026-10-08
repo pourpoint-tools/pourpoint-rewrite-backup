@@ -243,7 +243,7 @@ class RasterReader:
             if not self._declarations:
                 raise MissingRastersError("manifest declares no D8 rasters")
             source_crs = CRS.from_user_input(crs)
-            if source_crs.is_geographic and not (
+            if source_crs == CRS.from_epsg(4326) and not (
                 -180 <= region[0] < region[2] <= 180 and -90 <= region[1] < region[3] <= 90
             ):
                 raise ValueError("geographic raster bounds must be within longitude/latitude limits")

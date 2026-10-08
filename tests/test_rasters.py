@@ -301,3 +301,12 @@ def test_header_nodata_precedes_internal_masks(hfx: Path, nodata: int) -> None:
         result = data.rasters.read(data.rasters.prepare((0, 0, 4, 2)))
         np.testing.assert_array_equal(result.direction_valid, [[nodata != 8, True, True, False], [True] * 4])
         np.testing.assert_array_equal(result.accumulation_valid, [[True] * 4, [False, True, True, True]])
+
+
+def test_native_geographic_bounds_use_declared_angular_units(hfx: Path) -> None:
+    # NTF (Paris) uses grads: latitude 95 grads is valid, not 95 degrees.
+    add_pair(hfx, crs="EPSG:4807", transform=from_origin(0, 96, 1, 1))
+    with Dataset.open(hfx) as data:
+        request = data.rasters.prepare((0, 94, 1, 95), crs="EPSG:4807")
+        assert (request.col, request.row, request.width, request.height) == (0, 1, 1, 1)
+        np.testing.assert_array_equal(data.rasters.read(request).direction, [[3]])
