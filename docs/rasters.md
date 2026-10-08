@@ -115,3 +115,6 @@ handler state.
 
 GRIT data retain their bundle's CC BY-NC 4.0 license, attribution, provenance and
 source caveats. Pourpoint's code license does not replace those terms.
+
+See [public verification](raster-verification.md) for selected independent-decoder
+checks, received-byte counts, reuse and memory diagnostics on HFX 0.4.0.
