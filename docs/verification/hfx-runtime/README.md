@@ -55,7 +55,7 @@ repeated access. No full catchment or snap artifact was downloaded.
 
 Final cached-run resident topology: **670,353,612 bytes**. Each upstream call uses
 **111,686,500 bytes** of query-owned visited/frontier workspace, even for 326 rows.
-The selection retains 3,912 bytes; complete selected Arrow records retain 530,757.
+The selection retains 3,912 bytes; complete selected Arrow records retain 530,716.
 Serialized fsspec buffers retain 3,870,952 bytes after first records and
 13,738,232 after both snap sets. Selected candidate buffers are reported per phase.
 
