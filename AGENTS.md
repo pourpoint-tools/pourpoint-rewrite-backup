@@ -3,8 +3,9 @@
 ## Purpose
 
 Pourpoint is a Python watershed-delineation engine consuming compiled HFX datasets.
-This is a fresh rewrite workspace; no engine behavior is implemented yet.
-Use `../hfx/spec/HFX_SPEC.md` as the canonical input contract. Keep source-fabric
+This is a Python rewrite workspace; the reader/runtime foundation is implemented,
+while complete delineation and Engine composition remain separate work.
+Use `../hfx/docs/v0.4.0/vector-data.md` as the canonical input contract. Keep source-fabric
 normalization outside the engine rather than inventing a parallel HFX contract.
 
 The Rust comparison baseline is `CooperBigFoot/pourpoint` commit

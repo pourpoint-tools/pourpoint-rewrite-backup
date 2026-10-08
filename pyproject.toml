@@ -6,7 +6,13 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = []
+dependencies = [
+    "fsspec>=2026.9.0",
+    "numpy>=2.2",
+    "obstore>=0.11",
+    "pyarrow>=25",
+    "shapely>=2.1",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.1,<0.13"]

@@ -1,0 +1,46 @@
+{
+  "method": "independent original Parquet row groups and full local graph scan; no production reader/lookup",
+  "selected_rows": 326,
+  "selected_source_groups": [
+    5451,
+    5452
+  ],
+  "catchment_candidate_source_groups": [
+    5451,
+    5452
+  ],
+  "catchment_candidates": {
+    "rows": 5,
+    "full_graph_scan_exact": true,
+    "source_records_exact": true
+  },
+  "snap_sets": {
+    "segment-stems": {
+      "independent_groups": [
+        430
+      ],
+      "measured_groups": [
+        430
+      ],
+      "rows": 1,
+      "attributes_exact": true,
+      "decoded_geometry_exact": true,
+      "complete": true
+    },
+    "reach-stems": {
+      "independent_groups": [
+        5020,
+        5021
+      ],
+      "measured_groups": [
+        5020,
+        5021
+      ],
+      "rows": 2,
+      "attributes_exact": true,
+      "decoded_geometry_exact": true,
+      "complete": true
+    }
+  },
+  "status": "passed"
+}
