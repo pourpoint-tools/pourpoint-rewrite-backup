@@ -26,6 +26,7 @@ from pourpoint._validation import (
 from pourpoint.catchments import CatchmentReader
 from pourpoint.geometry import DecodedGeometry, GeometryBatch
 from pourpoint.metadata import Bounds, Manifest
+from pourpoint.rasters import RasterReader
 from pourpoint.spatial import candidate_groups, conservative_bounds, overlap
 from pourpoint.storage import Source
 from pourpoint.topology import Topology, UnitSelection
@@ -50,6 +51,7 @@ class Dataset:
 
     def __init__(self) -> None:
         self._closed = False
+        self._rasters: RasterReader | None = None
         self._temporary_cache: TemporaryDirectory[str] | None = None
         self._topology: Topology | None = None
         self._graph: pq.ParquetFile | None = None
@@ -101,6 +103,14 @@ class Dataset:
             self._graph = reader
         self._source.check_graph(self._graph_path)
         return self._graph
+
+    @property
+    def rasters(self) -> RasterReader:
+        """Lazy native-grid raster access, independent of topology acquisition."""
+        self._ensure_open()
+        if self._rasters is None:
+            self._rasters = RasterReader(self._source, self.manifest)
+        return self._rasters
 
     @property
     def topology(self) -> Topology:
@@ -319,6 +329,8 @@ class Dataset:
         if self._graph is not None:
             self._graph.close()
             self._graph = None
+        if self._rasters is not None:
+            self._rasters.close()
         self._source.close()
         self._snap_readers.clear()
         self._topology = None

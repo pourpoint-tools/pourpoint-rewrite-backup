@@ -20,6 +20,8 @@ with Dataset.open(
 ```
 
 See [runtime access](docs/runtime.md) for costs, candidate APIs, integrity and lifetime.
+[Native-grid raster access](docs/rasters.md) supplies prepared paired direction and
+accumulation windows; it does not implement terminal refinement.
 GRIT source data carry CC BY-NC 4.0 terms and attribution in their bundle; this
 repository's code license does not replace source-data terms.
 
@@ -56,7 +58,7 @@ git show 60e3d6e383546ea6ed20e68fe4d77959c816a48c:crates/core/src/engine.rs
 ```
 
 The canonical input contract is the
-[HFX 0.4.0 vector contract](https://github.com/pourpoint-tools/hfx/blob/9000d57311382b1549eb5bc5eedb646d03a387aa/docs/v0.4.0/vector-data.md),
+[HFX 0.4.0 vector contract](https://github.com/pourpoint-tools/hfx/blob/bb7ea1ddb0c83e2a38968450e7163a921d5e3a4f/docs/v0.4.0/vector-data.md),
 also available locally at `../hfx/docs/v0.4.0/vector-data.md` when using sibling checkouts.
 
 ## License

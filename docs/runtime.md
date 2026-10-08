@@ -41,6 +41,13 @@ metadata, temporary conversion buffers and native GEOS allocations.
 `last_access` reports selected batches or row groups for the latest access.
 It is a diagnostic, not network-traffic accounting.
 
+## Native-grid rasters
+
+`Dataset.rasters` supplies lazy prepared requests and paired native-grid reads.
+See [raster access](rasters.md) for encodings, masks, transport and lifetime.
+Raster calls do not load topology or catchment batches. Standalone raster access
+also avoids Dataset opening costs for catchment metadata.
+
 ## Spatial and snap candidates
 
 `catchment_candidates((west, south, east, north), levels=None)` uses graph Parquet

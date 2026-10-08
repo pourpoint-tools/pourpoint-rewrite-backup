@@ -17,6 +17,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, BinaryIO, cast
 from urllib.parse import unquote, urlsplit
+from weakref import WeakSet
 
 import obstore
 import pyarrow.parquet as pq
@@ -46,6 +47,12 @@ class _ArtifactFile(AbstractBufferedFile):
         self.identity = identity
         super().__init__(None, path, mode="rb", size=identity.size, block_size=65536, cache_type="readahead")
 
+    # GDAL tracks opener cursors by identity, not fsspec filesystem metadata.
+    __hash__ = object.__hash__
+
+    def __eq__(self, other: object) -> bool:
+        return self is other
+
     def _fetch_range(self, start: int, end: int) -> bytes:
         return self.source._range(self.path, self.identity, start, end)
 
@@ -65,6 +72,7 @@ class Source:
         self._local_root: Path | None = None
         self._closed = False
         self._files: dict[str, _ArtifactFile] = {}
+        self._independent_files: WeakSet[_ArtifactFile] = WeakSet()
         self._graphs: dict[Path, tuple[int, int, int, int]] = {}
         self._fingerprints: dict[str, Fingerprint] = {}
         self._bounded: set[str] = set()
@@ -83,6 +91,10 @@ class Source:
             headers = dict(client.pop("default_headers", {}))
             headers = {k: v for k, v in headers.items() if k.lower() != "accept-encoding"}
             headers["Accept-Encoding"] = "identity"
+            # The root manifest can be amended by HFX publication. Revalidate
+            # origin responses; read_json still retains one lifetime snapshot.
+            headers = {k: v for k, v in headers.items() if k.lower() != "cache-control"}
+            headers["Cache-Control"] = "no-cache"
             client["default_headers"] = headers
             options["client_options"] = client
             if parsed.scheme in {"http", "https"}:
@@ -195,6 +207,28 @@ class Source:
             self._bounded.add(path)
         stream.seek(0)
         return cast(BinaryIO, stream)
+
+    def raster_file(self, path: str, fingerprint: Fingerprint) -> BinaryIO:
+        """Caller-owned cursor over this source's existing pinned artifact identity.
+
+        Used by GDAL's opener, not Rasterio's eager file-object/MemoryFile path.
+        Closing the returned cursor does not close other readers of the artifact.
+        """
+        self.open_artifact(path, fingerprint, bounded=True)
+        stream = _ArtifactFile(self, path, self._files[path].identity)
+        self._independent_files.add(stream)
+        return cast(BinaryIO, stream)
+
+    def check_artifact(self, path: str) -> None:
+        """Check local identity even when a native reader satisfies a cached read.
+
+        Remote cached bytes retain their pinned identity; new ranges enforce that
+        identity. This does not check whether the latest remote version changed.
+        """
+        self._path(path)
+        identity = self._files[path].identity
+        if identity.local_stat is not None and self._stat(path) != identity.local_stat:
+            raise ValueError(f"{path}: artifact changed")
 
     def read_json(self, path: str, fingerprint: Fingerprint | None = None) -> dict[str, object]:
         path = self._path(path)
@@ -319,7 +353,9 @@ class Source:
         pre-buffering and decoded Arrow batches have separate ownership/accounting.
         """
         return sum(
-            len(cast(ReadAheadCache, stream.cache).cache) for stream in self._files.values() if stream.cache is not None
+            len(cast(ReadAheadCache, stream.cache).cache)
+            for stream in (*self._files.values(), *self._independent_files)
+            if not stream.closed and stream.cache is not None
         )
 
     def close(self) -> None:
@@ -330,7 +366,7 @@ class Source:
             for reader in self._parquet.values():
                 reader.close(force=True)
         finally:
-            for stream in self._files.values():
+            for stream in (*self._files.values(), *self._independent_files):
                 stream.close()
             self._parquet.clear()
             self._files.clear()
