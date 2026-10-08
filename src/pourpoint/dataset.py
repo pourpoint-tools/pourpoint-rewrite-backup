@@ -86,10 +86,15 @@ class Dataset:
         if self._graph is None:
             path = self.manifest.graph
             local = self._source.graph_path(self._cache_dir, path, self.manifest.artifacts[path])
-            self._graph = pq.ParquetFile(local, pre_buffer=False)
-            schema_check(self._graph.schema_arrow, GRAPH_FIELDS, path)
-            if self._graph.metadata.num_rows != self.manifest.unit_count:
-                raise ValueError(f"{path}: count differs from manifest unit_count")
+            reader = pq.ParquetFile(local, pre_buffer=False)
+            try:
+                schema_check(reader.schema_arrow, GRAPH_FIELDS, path)
+                if reader.metadata.num_rows != self.manifest.unit_count:
+                    raise ValueError(f"{path}: count differs from manifest unit_count")
+            except BaseException:
+                reader.close()
+                raise
+            self._graph = reader
         return self._graph
 
     @property
@@ -193,7 +198,7 @@ class Dataset:
         envelope = conservative_bounds(bounds)
         eligible = self._eligible_levels(levels)
         graph = self._graph_reader()
-        groups = candidate_groups(graph, envelope, levels=eligible) if eligible else []
+        groups = candidate_groups(graph, envelope, levels=eligible, graph=True) if eligible else []
         ids: list[npt.NDArray[np.int64]] = []
         for group in groups:
             candidate = graph.read_row_group(
@@ -201,7 +206,7 @@ class Dataset:
             )
             nonnull(candidate, candidate.column_names, self.manifest.graph)
             bbox_check(candidate, self.manifest.graph, graph=True)
-            mask = overlap(candidate, envelope) & np.isin(candidate["level"].to_numpy(), eligible)
+            mask = overlap(candidate, envelope, graph=True) & np.isin(candidate["level"].to_numpy(), eligible)
             ids.append(candidate["id"].to_numpy()[mask])
         result = self.records(np.concatenate(ids) if ids else np.array([], dtype=np.int64))
         self.last_access["graph_row_groups"] = groups
@@ -230,11 +235,7 @@ class Dataset:
             self._snap_readers[name] = reader
         file = self._snap_readers[name]
         groups = candidate_groups(file, envelope) if set(eligible).intersection(declaration.references_levels) else []
-        columns = [
-            name
-            for name in ["id", "unit_id", "weight", "stem_role", "bbox", "geometry"]
-            if name in file.schema_arrow.names
-        ]
+        columns = file.schema_arrow.names
         pieces: list[pa.Table] = []
         geometries: list[npt.NDArray[np.object_]] = []
         maximum = 0

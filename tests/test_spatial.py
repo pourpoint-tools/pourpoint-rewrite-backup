@@ -87,3 +87,17 @@ def test_graph_statistics_prune_before_catchment_lookup(hfx: Path, monkeypatch: 
         assert data.last_access["graph_row_groups"] == [3]
         assert reads == [(3, ["id", "level", "bbox_minx", "bbox_miny", "bbox_maxx", "bbox_maxy"])]
         assert data.last_access["catchment_batches"] == (1,)
+
+
+def test_snap_extra_source_fields_do_not_change_spatial_schema(hfx: Path) -> None:
+    path = hfx / "fine.parquet"
+    table = pq.read_table(path).append_column("source_label", pa.array(["a", "b", "c", "d"]))
+    # This is a valid extra source field, not a graph schema declaration.
+    table = table.append_column("bbox_minx", pa.array([100.0] * 4))
+    pq.write_table(table, path, row_group_size=2)
+    refresh_fingerprint(hfx, "fine.parquet")
+    with Dataset.open(hfx) as data:
+        selected = data.snap_candidates("fine", (0.4, 0.4, 0.7, 0.6))
+        assert selected.ids.tolist() == [101, 102]
+        assert selected.attributes["source_label"].to_pylist() == ["a", "b"]
+        assert selected.attributes["bbox_minx"].to_pylist() == [100.0, 100.0]

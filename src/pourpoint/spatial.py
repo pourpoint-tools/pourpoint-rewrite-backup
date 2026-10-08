@@ -25,8 +25,9 @@ def conservative_bounds(value: Bounds) -> Bounds:
     )
 
 
-def candidate_groups(file: pq.ParquetFile, envelope: Bounds, *, levels: tuple[int, ...] | None = None) -> list[int]:
-    graph = "bbox_minx" in file.schema_arrow.names
+def candidate_groups(
+    file: pq.ParquetFile, envelope: Bounds, *, levels: tuple[int, ...] | None = None, graph: bool = False
+) -> list[int]:
     if "bbox" not in file.schema_arrow.names and not graph:
         return list(range(file.num_row_groups))
     indices = {file.metadata.schema.column(i).path: i for i in range(file.metadata.num_columns)}
@@ -64,8 +65,8 @@ def candidate_groups(file: pq.ParquetFile, envelope: Bounds, *, levels: tuple[in
     return result
 
 
-def overlap(table: pa.Table, envelope: Bounds) -> npt.NDArray[np.bool_]:
-    if "bbox_minx" in table.column_names:
+def overlap(table: pa.Table, envelope: Bounds, *, graph: bool = False) -> npt.NDArray[np.bool_]:
+    if graph:
         values = [table[k].to_numpy() for k in ("bbox_minx", "bbox_miny", "bbox_maxx", "bbox_maxy")]
         return (
             (values[0] <= envelope[2])

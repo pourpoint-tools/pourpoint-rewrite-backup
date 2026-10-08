@@ -58,3 +58,14 @@ def test_selected_snap_records_are_validated(hfx: Path, name: str, values: list[
     refresh_fingerprint(hfx, "fine.parquet")
     with Dataset.open(hfx) as data, pytest.raises(ValueError, match=match):
         data.snap_candidates("fine", (0, 0, 1, 1))
+
+
+def test_failed_graph_validation_cannot_be_bypassed_by_retry(hfx: Path) -> None:
+    path = hfx / "graph.parquet"
+    table = pq.read_table(path).drop(["bbox_minx"])
+    pq.write_table(table, path)
+    refresh_fingerprint(hfx, "graph.parquet")
+    with Dataset.open(hfx) as data:
+        for _ in range(2):
+            with pytest.raises(ValueError, match="bbox_minx"):
+                data.upstream(40)
