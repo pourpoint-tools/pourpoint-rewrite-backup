@@ -20,6 +20,7 @@ import numpy.typing as npt
 import rasterio
 from affine import Affine
 from pyproj import Transformer
+from pyproj.exceptions import ProjError
 from rasterio.crs import CRS  # ty: ignore[unresolved-import]  # Cython module without stubs
 from rasterio.io import DatasetReader
 from rasterio.windows import Window
@@ -48,6 +49,12 @@ def normalize_direction(
         if encoding == "grass" and values.dtype.kind == "i":
             result[valid & (values == -code)] = -normalized
     return result
+
+
+def _valid_mask(values: npt.NDArray[np.generic], mask: npt.NDArray[np.uint8], nodata: float) -> npt.NDArray[np.bool_]:
+    # GDAL prefers an internal TIFF mask over the nodata tag. HFX still requires
+    # header nodata to be absent, even if an internal mask marks that cell valid.
+    return (mask != 0) & (~np.isnan(values) if np.isnan(nodata) else values != nodata)
 
 
 class MissingRastersError(LookupError):
@@ -236,11 +243,20 @@ class RasterReader:
             if not self._declarations:
                 raise MissingRastersError("manifest declares no D8 rasters")
             source_crs = CRS.from_user_input(crs)
+            if source_crs.is_geographic and not (
+                -180 <= region[0] < region[2] <= 180 and -90 <= region[1] < region[3] <= 90
+            ):
+                raise ValueError("geographic raster bounds must be within longitude/latitude limits")
             for index, declaration in enumerate(self._declarations):
                 native = region
                 if source_crs != declaration.crs:
                     transformer = Transformer.from_crs(source_crs, declaration.crs, always_xy=True)
-                    native = bounds(transformer.transform_bounds(*region, densify_pts=101, errcheck=True))
+                    try:
+                        native = bounds(transformer.transform_bounds(*region, densify_pts=101, errcheck=True))
+                    except ProjError:
+                        # A valid region outside this projection's domain cannot
+                        # be covered by this pair. Other entries may still cover it.
+                        continue
                 pair = self._open(index)
                 grid = pair.grid
                 inverse = ~grid.transform
@@ -276,8 +292,12 @@ class RasterReader:
             try:
                 direction = pair.direction.read(1, window=window)
                 accumulation = pair.accumulation.read(1, window=window)
-                direction_valid = pair.direction.read_masks(1, window=window) != 0
-                accumulation_valid = pair.accumulation.read_masks(1, window=window) != 0
+                direction_valid = _valid_mask(
+                    direction, pair.direction.read_masks(1, window=window), pair.direction.nodata
+                )
+                accumulation_valid = _valid_mask(
+                    accumulation, pair.accumulation.read_masks(1, window=window), pair.accumulation.nodata
+                )
             finally:
                 for path in (declaration.direction, declaration.accumulation):
                     self._source.check_artifact(path)

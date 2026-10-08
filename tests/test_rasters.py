@@ -268,3 +268,36 @@ def test_pair_open_failure_closes_acquired_cursors(hfx: Path) -> None:
             data.rasters.prepare((0, 0, 1, 1))
         assert not data.rasters._pairs
         assert all(stream.closed for stream in data._source._independent_files)
+
+
+def test_projection_domain_does_not_hide_later_covering_pair(hfx: Path) -> None:
+    add_pair(hfx, prefix="utm-", crs="EPSG:32631", transform=from_origin(500000, 2, 1, 1))
+    add_pair(hfx, prefix="geographic-", transform=from_origin(90, 2, 1, 1))
+    with Dataset.open(hfx) as data:
+        request = data.rasters.prepare((92, 0, 94, 1))
+        assert request.grid.crs == rasterio.crs.CRS.from_epsg(4326)
+        assert (request.col, request.row, request.width, request.height) == (2, 1, 2, 1)
+        np.testing.assert_array_equal(data.rasters.read(request).direction, [[5, 6]])
+        with pytest.raises(ValueError, match="geographic"):
+            data.rasters.prepare((92, 100, 94, 101))
+
+
+@pytest.mark.parametrize("nodata", [255, 8])
+def test_header_nodata_precedes_internal_masks(hfx: Path, nodata: int) -> None:
+    from conftest import refresh_fingerprint
+
+    add_pair(
+        hfx,
+        direction=np.array([[8, 7, 0, nodata], [6, 5, 4, 3]], dtype="uint8"),
+        accumulation=np.array([[1, 2, 3, 4], [np.nan, 6, 7, 8]], dtype="float32"),
+    )
+    with rasterio.Env(GDAL_TIFF_INTERNAL_MASK=True):
+        for name in ("dir.tif", "acc.tif"):
+            with rasterio.open(hfx / name, "r+") as band:
+                band.nodata = nodata if name == "dir.tif" else float("nan")
+                band.write_mask(np.full((2, 4), 255, dtype="uint8"))
+            refresh_fingerprint(hfx, name)
+    with Dataset.open(hfx) as data:
+        result = data.rasters.read(data.rasters.prepare((0, 0, 4, 2)))
+        np.testing.assert_array_equal(result.direction_valid, [[nodata != 8, True, True, False], [True] * 4])
+        np.testing.assert_array_equal(result.accumulation_valid, [[True] * 4, [False, True, True, True]])

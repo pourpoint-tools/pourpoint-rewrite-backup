@@ -325,6 +325,7 @@ def test_raster_transport_pins_reuse_and_mutation(origin: tuple[str, OriginState
         direction=np.full((1024, 1024), 8, dtype="uint8"),
         accumulation=np.full((1024, 1024), 16777217, dtype="int32"),
         transform=from_origin(0, 1024, 1, 1),
+        crs="EPSG:3857",
     )
     url, state = origin
     state["files"] = {path.name: path.read_bytes() for path in hfx.iterdir() if path.is_file()}
@@ -339,7 +340,7 @@ def test_raster_transport_pins_reuse_and_mutation(origin: tuple[str, OriginState
             "secret_access_key": "fixture",
         }
     with Dataset.open(root, storage_options=options) as data:
-        request = data.rasters.prepare((0, 1023, 1, 1024))
+        request = data.rasters.prepare((0, 1023, 1, 1024), crs="EPSG:3857")
         result = data.rasters.read(request)
         assert result.accumulation[0, 0] == 16777217
         count = len(state["requests"])
@@ -348,7 +349,9 @@ def test_raster_transport_pins_reuse_and_mutation(origin: tuple[str, OriginState
         assert data.rasters.read(request).direction[0, 0] == 1
         assert len(state["requests"]) == count
         with pytest.raises((RasterioIOError, ValueError, OSError), match="[Rr]ead|ETag|changed|IReadBlock"):
-            data.rasters.read(data.rasters.prepare((500, 500, 501, 501)))
+            data.rasters.read(data.rasters.prepare((500, 500, 501, 501), crs="EPSG:3857"))
+        # The failure must not poison an already cached, coherent original tile.
+        assert data.rasters.read(request).direction[0, 0] == 1
     assert all(item[2:] == ('"v1"', "identity") for item in state["requests"])
     assert all(signed == (protocol == "s3") for signed in state["signed"])
     assert sum(item[1] for item in state["requests"]) < 1024 * 1024
