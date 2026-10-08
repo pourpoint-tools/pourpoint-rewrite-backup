@@ -10,8 +10,9 @@ delineation and the public `Engine` API are not implemented.
 ```python
 from pourpoint import Dataset
 
-with Dataset.open("https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/",
-                  cache_dir="/path/to/graph-cache") as dataset:
+with Dataset.open(
+    "https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/", cache_dir="/path/to/graph-cache"
+) as dataset:
     selected = dataset.upstream(22333245)
     records = dataset.records(selected)  # attributes + exact WKB; one grouped access
     attributes = records.table.drop(["geometry"])
