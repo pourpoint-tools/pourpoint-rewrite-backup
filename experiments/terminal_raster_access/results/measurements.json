@@ -1,0 +1,335 @@
+{
+  "evidence_directory": "/Users/nicolaslazaro/Desktop/work/artifacts/terminal-raster-access",
+  "runs": [
+    {
+      "settings": {
+        "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
+        "GDAL_HTTP_TIMEOUT": "30",
+        "GDAL_HTTP_CONNECTTIMEOUT": "15",
+        "GDAL_HTTP_MAX_RETRY": "0",
+        "CPL_CURL_VERBOSE": true,
+        "CPL_DEBUG": true
+      },
+      "python": "3.14.6 (main, Jul 23 2026, 14:51:00) [Clang 22.1.3 ]",
+      "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+      "versions": {
+        "rasterio": "1.5.2",
+        "gdal": "3.12.2",
+        "numpy": "2.5.3"
+      },
+      "first_index": 1,
+      "selection_sha256": "76af6301b7bc7fe13877ec01a337e382a5292a6a26b78bb4e56525d27cc97ca7",
+      "cache_state": "fresh process; remote/CDN caches uncontrolled; normal GDAL caches",
+      "manifest": {
+        "sha256": "02339ff92cbfd1d2ea57bb5332cb843b98115cd7a7395f64c14fac78d2ed643c",
+        "headers": {
+          "date": "Thu, 08 Oct 2026 10:56:21 GMT",
+          "etag": "W/\"5157cdf6c39b469df0c7c6f2936e3536\"",
+          "last-modified": "Wed, 19 Aug 2026 15:59:29 GMT",
+          "content-encoding": "gzip"
+        },
+        "decoded_manifest_bytes": 1426
+      },
+      "grid": {
+        "transform": [
+          30.0,
+          0.0,
+          -15000000.0,
+          0.0,
+          -30.0,
+          8400000.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "crs": "EPSG:8857",
+        "shape": [
+          500000,
+          1070000
+        ],
+        "block_shapes": [
+          [
+            512,
+            512
+          ]
+        ],
+        "dtypes": [
+          "uint8",
+          "float32"
+        ],
+        "nodata": [
+          255.0,
+          "NaN"
+        ]
+      },
+      "first_usable_seconds": 1.6276652500964701,
+      "status": "ok",
+      "phases": [
+        {
+          "phase": "declaration",
+          "status": "ok",
+          "seconds": 0.2633122499100864,
+          "http_requests": 1,
+          "http_responses": 1,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 61636608
+        },
+        {
+          "phase": "open_direction",
+          "status": "ok",
+          "seconds": 0.39622383331879973,
+          "http_requests": 2,
+          "http_responses": 2,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 82493440
+        },
+        {
+          "phase": "open_accumulation",
+          "status": "ok",
+          "seconds": 0.153568749781698,
+          "http_requests": 2,
+          "http_responses": 2,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 82608128
+        },
+        {
+          "phase": "grid_metadata",
+          "status": "ok",
+          "seconds": 0.00013958290219306946,
+          "http_requests": 0,
+          "http_responses": 0,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 82673664
+        },
+        {
+          "phase": "first_pair",
+          "status": "ok",
+          "seconds": 0.80279824975878,
+          "http_requests": 4,
+          "http_responses": 4,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 155844608,
+          "retained_array_bytes": 741566,
+          "logical_paired_reads": 1
+        },
+        {
+          "phase": "repeat_1",
+          "status": "ok",
+          "seconds": 0.0012249578721821308,
+          "http_requests": 0,
+          "http_responses": 0,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 156631040,
+          "retained_array_bytes": 741566,
+          "logical_paired_reads": 1
+        },
+        {
+          "phase": "repeat_2",
+          "status": "ok",
+          "seconds": 0.0007589999586343765,
+          "http_requests": 0,
+          "http_responses": 0,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 156647424,
+          "retained_array_bytes": 741566,
+          "logical_paired_reads": 1
+        },
+        {
+          "phase": "fixed_batch",
+          "status": "ok",
+          "seconds": 2.9316047499887645,
+          "http_requests": 16,
+          "http_responses": 16,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 168820736,
+          "retained_array_bytes": 1631595,
+          "logical_paired_reads": 5
+        }
+      ],
+      "traffic": {
+        "requests": 25,
+        "responses": 25,
+        "failed_responses": 0,
+        "response_bytes": "not measured"
+      },
+      "process_peak_bytes": 168853504,
+      "access_seconds": 4.561802166048437,
+      "run": "run-2",
+      "raw_measurement_sha256": "9999fe170ed507cbab03dc232f1fc0e6598fbae14bca6dcc62b3961f90aa8c05",
+      "raw_log_sha256": "5c2d275d3a1da418dc06dd670dc211c28d69a321ec031aa3f6a521a048129ba1"
+    },
+    {
+      "settings": {
+        "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
+        "GDAL_HTTP_TIMEOUT": "30",
+        "GDAL_HTTP_CONNECTTIMEOUT": "15",
+        "GDAL_HTTP_MAX_RETRY": "0",
+        "CPL_CURL_VERBOSE": true,
+        "CPL_DEBUG": true
+      },
+      "python": "3.14.6 (main, Jul 23 2026, 14:51:00) [Clang 22.1.3 ]",
+      "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+      "versions": {
+        "rasterio": "1.5.2",
+        "gdal": "3.12.2",
+        "numpy": "2.5.3"
+      },
+      "first_index": 0,
+      "selection_sha256": "76af6301b7bc7fe13877ec01a337e382a5292a6a26b78bb4e56525d27cc97ca7",
+      "cache_state": "fresh process; remote/CDN caches uncontrolled; normal GDAL caches",
+      "manifest": {
+        "sha256": "02339ff92cbfd1d2ea57bb5332cb843b98115cd7a7395f64c14fac78d2ed643c",
+        "headers": {
+          "date": "Thu, 08 Oct 2026 10:56:40 GMT",
+          "etag": "W/\"5157cdf6c39b469df0c7c6f2936e3536\"",
+          "last-modified": "Wed, 19 Aug 2026 15:59:29 GMT",
+          "content-encoding": "gzip"
+        },
+        "decoded_manifest_bytes": 1426
+      },
+      "grid": {
+        "transform": [
+          30.0,
+          0.0,
+          -15000000.0,
+          0.0,
+          -30.0,
+          8400000.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "crs": "EPSG:8857",
+        "shape": [
+          500000,
+          1070000
+        ],
+        "block_shapes": [
+          [
+            512,
+            512
+          ]
+        ],
+        "dtypes": [
+          "uint8",
+          "float32"
+        ],
+        "nodata": [
+          255.0,
+          "NaN"
+        ]
+      },
+      "first_usable_seconds": 1.4320249170996249,
+      "status": "ok",
+      "phases": [
+        {
+          "phase": "declaration",
+          "status": "ok",
+          "seconds": 0.19529337529093027,
+          "http_requests": 1,
+          "http_responses": 1,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 61751296
+        },
+        {
+          "phase": "open_direction",
+          "status": "ok",
+          "seconds": 0.38862033281475306,
+          "http_requests": 2,
+          "http_responses": 2,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 83116032
+        },
+        {
+          "phase": "open_accumulation",
+          "status": "ok",
+          "seconds": 0.28148474963381886,
+          "http_requests": 2,
+          "http_responses": 2,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 83574784
+        },
+        {
+          "phase": "grid_metadata",
+          "status": "ok",
+          "seconds": 0.000384374987334013,
+          "http_requests": 0,
+          "http_responses": 0,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 83640320
+        },
+        {
+          "phase": "first_pair",
+          "status": "ok",
+          "seconds": 0.5570156252942979,
+          "http_requests": 4,
+          "http_responses": 4,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 152436736,
+          "retained_array_bytes": 7616,
+          "logical_paired_reads": 1
+        },
+        {
+          "phase": "repeat_1",
+          "status": "ok",
+          "seconds": 0.0011641252785921097,
+          "http_requests": 0,
+          "http_responses": 0,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 152436736,
+          "retained_array_bytes": 7616,
+          "logical_paired_reads": 1
+        },
+        {
+          "phase": "repeat_2",
+          "status": "ok",
+          "seconds": 0.0007573328912258148,
+          "http_requests": 0,
+          "http_responses": 0,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 152436736,
+          "retained_array_bytes": 7616,
+          "logical_paired_reads": 1
+        },
+        {
+          "phase": "fixed_batch",
+          "status": "ok",
+          "seconds": 2.1065936251543462,
+          "http_requests": 16,
+          "http_responses": 16,
+          "http_failed_responses": 0,
+          "http_response_bytes": "not measured",
+          "process_peak_bytes": 167477248,
+          "retained_array_bytes": 1631595,
+          "logical_paired_reads": 5
+        }
+      ],
+      "traffic": {
+        "requests": 25,
+        "responses": 25,
+        "failed_responses": 0,
+        "response_bytes": "not measured"
+      },
+      "process_peak_bytes": 167510016,
+      "access_seconds": 3.5413802498951554,
+      "run": "run-3",
+      "raw_measurement_sha256": "25db274b33c8de9f9cde83f31f5d9832a993283be91fe9ee5b67bef989111fb0",
+      "raw_log_sha256": "862b5f9035bfc14834f845e6235bde06eb76b992d672355a52df056c41128c81"
+    }
+  ]
+}

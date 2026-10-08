@@ -1,0 +1,46 @@
+{
+  "dataset_root": "https://basin-delineations-public.upstream.tech/grit/hfx-v0.3.0/",
+  "manifest_sha256": "02339ff92cbfd1d2ea57bb5332cb843b98115cd7a7395f64c14fac78d2ed643c",
+  "contract_commit": "c18a8a6a115e2045080d8752279d39db2b9b29b6",
+  "rust_reference_commit": "60e3d6e383546ea6ed20e68fe4d77959c816a48c",
+  "assets": {
+    "flow_dir": {
+      "etag": "\"bc48d1013cf6908fb44c325dd2ad10ab-1511\"",
+      "last-modified": "Wed, 22 Jul 2026 16:16:52 GMT",
+      "content-length": "50686516478",
+      "accept-ranges": "bytes"
+    },
+    "flow_acc": {
+      "etag": "\"49eab3942a26036aa49e72ea33a1b724-6112\"",
+      "last-modified": "Wed, 22 Jul 2026 16:04:21 GMT",
+      "content-length": "205069870081",
+      "accept-ranges": "bytes"
+    }
+  },
+  "selection_revision": {
+    "measured_file": "selections-measured.json",
+    "measured_sha256": "76af6301b7bc7fe13877ec01a337e382a5292a6a26b78bb4e56525d27cc97ca7",
+    "committed_sha256": "3c47d63cdef3ba6bee1f862fad55d52831d6dda393df079965cac603505700c2",
+    "change": "Only source.attribution and windows[].source_wkb_base64 added after measured runs. Removing those keys reproduces measured bytes exactly with JSON indent=2 and trailing newline. All IDs, bounds, windows, tile shapes, source metadata, order and existing hashes unchanged."
+  },
+  "diagnostics": {
+    "run-1": "Completed access, incomplete HTTP accounting: _env logger misses _err read events; not a headline measurement. Retained external.",
+    "header_probes": 2,
+    "remote_measurement_workers": 3,
+    "accepted_workers": [
+      "run-2",
+      "run-3"
+    ],
+    "http_accounting_check": "Each accepted raw log has 24 sent request headers and 24 status lines; plus one timed manifest request=25. No >=400 responses."
+  },
+  "code_identity": {
+    "measured_sources": {
+      "measure.py": "e9c957d2e3b3219a59db03d07db71ef7ae691e4ac4fbcf2602aae26f3716c196",
+      "access.py": "15bd576cef05dd9917cea6832cd33b66977d6fdfaef9b58026531a0ab52eb0dd",
+      "selections.json": "76af6301b7bc7fe13877ec01a337e382a5292a6a26b78bb4e56525d27cc97ca7"
+    },
+    "measured_source_directory": "/Users/nicolaslazaro/Desktop/work/artifacts/terminal-raster-access/measured-code",
+    "snapshot_method": "Saved after measurements by reversing the two known report-only edits to measure.py: nodata JSON NaN -> string and allow_nan=False. access.py unchanged since accepted runs. Selection bytes exactly match recorded run hashes.",
+    "delivery_changes": "Strict JSON serialization and embedded selection WKB/attribution only; measured reader/instrumentation behavior unchanged."
+  }
+}
