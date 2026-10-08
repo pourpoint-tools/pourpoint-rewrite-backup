@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "reference": "cached independently verified source oracle",
+  "final_pin": "2543ee5",
+  "compared": [
+    {
+      "name": "catchment-candidates.arrow",
+      "rows": 5,
+      "exact_records_schema_metadata": true,
+      "reference_sha256": "6764c33fa6e93c48e03f30a88fd64c966bb1bd88f7149c888604c5cd01ca895d",
+      "final_sha256": "6764c33fa6e93c48e03f30a88fd64c966bb1bd88f7149c888604c5cd01ca895d"
+    },
+    {
+      "name": "selected.arrow",
+      "rows": 326,
+      "exact_records_schema_metadata": true,
+      "reference_sha256": "b963c99457422a380ce4f0ef5a1b4e05a7ad115f0f0241ac618517b90c43073b",
+      "final_sha256": "b963c99457422a380ce4f0ef5a1b4e05a7ad115f0f0241ac618517b90c43073b"
+    },
+    {
+      "name": "snap-reach-stems.arrow",
+      "rows": 2,
+      "exact_records_schema_metadata": true,
+      "reference_sha256": "6cd8a7284cdcbb2a2454c706faa3732cd0fd8dbb190bc41700953f6a7d6baaa2",
+      "final_sha256": "6cd8a7284cdcbb2a2454c706faa3732cd0fd8dbb190bc41700953f6a7d6baaa2"
+    },
+    {
+      "name": "snap-segment-stems.arrow",
+      "rows": 1,
+      "exact_records_schema_metadata": true,
+      "reference_sha256": "29918489fbf8185a2782048f1e0f92fc1c1fb6f008980b5cd8e9f793c6e1ecd2",
+      "final_sha256": "29918489fbf8185a2782048f1e0f92fc1c1fb6f008980b5cd8e9f793c6e1ecd2"
+    }
+  ]
+}

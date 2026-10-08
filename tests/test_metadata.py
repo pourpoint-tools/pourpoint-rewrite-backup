@@ -40,11 +40,20 @@ def test_manifest_artifact_identity_and_source_metadata() -> None:
 
 @pytest.mark.parametrize(
     "key,value",
-    [("unit_count", 0), ("format_version", "0.3.0"), ("lookup", "../lookup.arrow"), ("index_batch_rows", 2)],
+    [
+        ("unit_count", 0),
+        ("format_version", "0.3.0"),
+        ("lookup", "../lookup.arrow"),
+        ("index_batch_rows", 2),
+        ("auxiliary", None),
+    ],
 )
 def test_invalid_manifest(key: str, value: object) -> None:
     data = manifest_data()
-    data[key] = value
+    if value is None:
+        data.pop(key)
+    else:
+        data[key] = value
     with pytest.raises(ValueError):
         Manifest.parse(data)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import threading
 from collections.abc import Iterator
+from contextlib import suppress
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import NotRequired, TypedDict
@@ -64,7 +65,9 @@ def origin() -> Iterator[tuple[str, OriginState]]:
             if mode == "encoding":
                 self.send_header("Content-Encoding", "gzip")
             self.end_headers()
-            self.wfile.write(body)
+            # Strict clients can reject malformed headers before reading a body.
+            with suppress(BrokenPipeError, ConnectionResetError):
+                self.wfile.write(body)
             state["requests"].append(
                 (header, len(body), self.headers.get("If-Match"), self.headers.get("Accept-Encoding"))
             )

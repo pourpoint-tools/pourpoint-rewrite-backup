@@ -138,7 +138,7 @@ class Manifest:
         _string(data, "adapter_version")
         auxiliary: list[Auxiliary] = []
         snaps: dict[str, SnapSet] = {}
-        entries = data.get("auxiliary", [])
+        entries = data.get("auxiliary")
         if not isinstance(entries, list):
             raise ValueError("manifest auxiliary must be an array")
         for entry in entries:
