@@ -1,7 +1,5 @@
 """Checks for loaded HFX records; not a full geometric conformance validator."""
 
-import json
-
 import numpy as np
 import pyarrow as pa
 
@@ -38,20 +36,6 @@ def schema_check(schema: pa.Schema, fields: dict[str, tuple[pa.DataType, bool]],
         field = schema.field(name)
         if field.type != dtype or field.nullable != nullable:
             raise ValueError(f"{artifact}: {name} expected {dtype}, nullable={nullable}; got {field}")
-
-
-def geo_check(schema: pa.Schema, artifact: str) -> None:
-    try:
-        geo = json.loads((schema.metadata or {})[b"geo"])
-        geometry = geo["columns"]["geometry"]
-        if geo["version"] != "1.1.0" or geo["primary_column"] != "geometry" or geometry["encoding"] != "WKB":
-            raise ValueError("expected GeoParquet 1.1 WKB geometry")
-        if "bbox" in schema.names and geometry["covering"]["bbox"] != {
-            k: ["bbox", k] for k in ("xmin", "ymin", "xmax", "ymax")
-        }:
-            raise ValueError("invalid bbox covering")
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ValueError(f"{artifact}: invalid geo metadata / bbox covering") from exc
 
 
 def nonnull(table: pa.Table, names: list[str], artifact: str) -> None:

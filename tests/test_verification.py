@@ -26,6 +26,15 @@ def test_integrated_measurement(hfx: Path, tmp_path: Path) -> None:
     record = verification().run(hfx, cache_dir=tmp_path / "cache", output_dir=output, unit_id=40, window_degrees=1.0)
     assert record["status"] == "passed"
     assert record["topology_check"] == {"selected_count": 4, "exact_membership": True}
+    assert [phase["name"] for phase in record["phases"][:4]] == [
+        "open",
+        "topology:first",
+        "records:first",
+        "terminal_geometry:first",
+    ]
+    for name in ("catchment-candidates.arrow", "snap-coarse.arrow", "snap-fine.arrow"):
+        with pa.ipc.open_file(output / name) as reader:
+            assert "geometry" in reader.schema.names
     phases = {phase["name"]: phase for phase in record["phases"]}
     assert phases["open"]["dataset_buffers"]["topology"] == 0
     assert phases["topology:first"]["selected_count"] == 4

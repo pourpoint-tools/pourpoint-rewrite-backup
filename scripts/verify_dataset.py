@@ -82,6 +82,7 @@ def run(
     data: Dataset | None = None
 
     def measure[T](name: str, action: Callable[[], T], **details: object) -> T:
+        print(f"{datetime.now(UTC).isoformat()} {name}:start", flush=True)
         before = memory()
         started_utc = datetime.now(UTC).isoformat()
         started = perf_counter()
@@ -108,15 +109,22 @@ def run(
                 else result.buffer_bytes
             )
         phases.append(entry)
+        print(
+            f"{finished_utc} {name}:done seconds={seconds:.6f} selected={entry.get('selected_count', '-')}", flush=True
+        )
         return result
 
     data = measure("open", lambda: Dataset.open(root, cache_dir=cache_dir, storage_options=storage_options))
     with data:
         selection = measure("topology:first", lambda: data.upstream(unit_id))
+        selected = measure("records:first", lambda: data.records(selection))
+        terminal = measure(
+            "terminal_geometry:first",
+            lambda: GeometryBatch(selected.table.take([0]), "polygon", selected.artifact).decode(),
+        )
         repeated_selection = measure("topology:repeat", lambda: data.upstream(unit_id))
         np.testing.assert_array_equal(selection.ids, repeated_selection.ids)
         del repeated_selection
-        selected = measure("records:first", lambda: data.records(selection))
         repeated = measure(
             "records:repeat", lambda: data.records(selection), baseline_retained_bytes=selected.buffer_bytes
         )
@@ -128,8 +136,10 @@ def run(
         batch = measure("records:batched", lambda: data.records(requested), requested_ids=requested)
         np.testing.assert_array_equal(batch.table["id"].to_numpy(), requested)
         del batch
-        terminal = measure("terminal_geometry:first", lambda: data.polygons([unit_id]).decode())
-        repeated_terminal = measure("terminal_geometry:repeat", lambda: data.polygons([unit_id]).decode())
+        repeated_terminal = measure(
+            "terminal_geometry:repeat",
+            lambda: GeometryBatch(selected.table.take([0]), "polygon", selected.artifact).decode(),
+        )
         np.testing.assert_array_equal(terminal.ids, [unit_id])
         np.testing.assert_array_equal(repeated_terminal.ids, terminal.ids)
         if not np.all(shapely.equals_exact(terminal.geometries, repeated_terminal.geometries, 0)):
@@ -152,7 +162,8 @@ def run(
         )
         if not candidates.table.equals(repeated_candidates.table):
             raise AssertionError("repeat catchment candidates differ")
-        del candidates, repeated_candidates
+        del repeated_candidates
+        snap_witnesses: dict[str, DecodedGeometry] = {}
         for name in data.manifest.snap_sets:
             snap = measure(
                 f"snap_candidates:{name}:first",
@@ -170,6 +181,7 @@ def run(
                 shapely.equals_exact(snap.geometries, repeat_snap.geometries, 0)
             ):
                 raise AssertionError("repeat snap candidates differ")
+            snap_witnesses[name] = snap
             del snap, repeat_snap
         measured_final_memory = memory()
         # Use the already-acquired local graph; no transport/hash calls in oracle.
@@ -215,13 +227,26 @@ def run(
             "retention": {
                 "selected_records_bytes": selected.buffer_bytes,
                 "selection_bytes": selection.buffer_bytes,
-                "note": "selection and first records stay live during all later phases; oracle and witness serialization run after timing",
+                "catchment_candidates_bytes": candidates.buffer_bytes,
+                "snap_witness_buffers_bytes": sum(
+                    snap.attributes.get_total_buffer_size() + snap.ids.nbytes + snap.geometries.nbytes
+                    for snap in snap_witnesses.values()
+                ),
+                "note": "selection and first records stay live during all later phases; first candidate and decoded snap results remain live for post-timing witnesses; native GEOS bytes unavailable; oracle and witness serialization run after timing",
             },
         }
         output = Path(output_dir)
         output.mkdir(parents=True, exist_ok=True)
         with pa.ipc.new_file(output / "selected.arrow", selected.table.schema) as writer:
             writer.write_table(selected.table)
+        with pa.ipc.new_file(output / "catchment-candidates.arrow", candidates.table.schema) as writer:
+            writer.write_table(candidates.table)
+        for name, snap in snap_witnesses.items():
+            table = snap.attributes.append_column(
+                "geometry", pa.array(shapely.to_wkb(snap.geometries), type=pa.binary())
+            )
+            with pa.ipc.new_file(output / f"snap-{name}.arrow", table.schema) as writer:
+                writer.write_table(table)
     record["after_close_memory"] = memory()
     (output / "measurement.json").write_text(json.dumps(record, indent=2) + "\n")
     return record
