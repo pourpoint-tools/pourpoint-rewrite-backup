@@ -2,8 +2,25 @@
 
 Private workspace for a fresh Python rewrite of pourpoint, a watershed
 delineation engine consuming [HFX](https://github.com/CooperBigFoot/hfx)
-datasets. The engine is not implemented yet. This repository starts with Python
-development tooling and does not provide the released Rust engine's API.
+datasets. The HFX 0.4.0 reader and runtime foundation are available. Complete
+delineation and the public `Engine` API are not implemented.
+
+## Reader and runtime
+
+```python
+from pourpoint import Dataset
+
+with Dataset.open("https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/",
+                  cache_dir="/path/to/graph-cache") as dataset:
+    selected = dataset.upstream(22333245)
+    records = dataset.records(selected)  # attributes + exact WKB; one grouped access
+    attributes = records.table.drop(["geometry"])
+    terminal = dataset.polygons([22333245]).decode()
+```
+
+See [runtime access](docs/runtime.md) for costs, candidate APIs, integrity and lifetime.
+GRIT source data carry CC BY-NC 4.0 terms and attribution in their bundle; this
+repository's code license does not replace source-data terms.
 
 ## Development
 
@@ -38,8 +55,8 @@ git show 60e3d6e383546ea6ed20e68fe4d77959c816a48c:crates/core/src/engine.rs
 ```
 
 The canonical input contract is the
-[HFX specification](https://github.com/CooperBigFoot/hfx/blob/main/spec/HFX_SPEC.md),
-also available locally at `../hfx/spec/HFX_SPEC.md` when using sibling checkouts.
+[HFX 0.4.0 vector contract](https://github.com/pourpoint-tools/hfx/blob/9000d57311382b1549eb5bc5eedb646d03a387aa/docs/v0.4.0/vector-data.md),
+also available locally at `../hfx/docs/v0.4.0/vector-data.md` when using sibling checkouts.
 
 ## License
 
