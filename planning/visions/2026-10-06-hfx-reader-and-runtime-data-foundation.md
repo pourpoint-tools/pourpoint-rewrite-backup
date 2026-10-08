@@ -5,269 +5,251 @@ Effort: https://github.com/pourpoint-tools/pourpoint/issues/3
 
 ## Outcome
 
-Build the HFX reader and the typed runtime data model it populates. Together they
-provide the data capabilities downstream engine operations need, without making
-those operations understand JSON, Parquet layout, remote storage, or repeated ID
-lookup machinery. This is working production foundation code, not another research
-report or a collection of type declarations without usable access operations.
+Deliver the **production HFX reader and the typed runtime representation it
+populates**. Downstream algorithms must be able to select units, traverse upstream,
+and access attributes, polygons and snap candidates without implementing file
+access or ID lookup themselves. This is working engine foundation code, not another
+benchmark or a collection of type declarations.
 
-Design the representation around its consumers, then implement ingestion against
-that representation. Keep **HFX 0.3.0 and snap v2 unchanged**. The research supports
-compact resident topology and selective geometry access; it does not justify a new
-HFX format or require dense on-disk IDs.
+Support **HFX 0.4.0 only**. The maintainer selected the published-lookup and
+byte-budgeted Arrow IPC design formerly called candidate B. Its finalized input
+contract is [HFX 0.4.0 vector data](https://github.com/pourpoint-tools/hfx/blob/9000d57311382b1549eb5bc5eedb646d03a387aa/docs/v0.4.0/vector-data.md).
+Do not retain a production 0.3.0 catchment reader, candidate A, or the experimental
+B wrapper. Source-fabric normalization and conversion remain upstream in HFX.
 
-The eventual user experience remains simple:
+The eventual public experience remains `Engine(dataset=url)` followed by
+`engine.delineate(lat=..., lon=...)`. Users must not construct internal topology or
+manually download hosted data. This Effort supplies the reader/runtime foundation;
+complete delineation and the final public engine composition belong to later Efforts.
 
-```python
-engine = pourpoint.Engine(dataset=url)
-result = engine.delineate(lat=..., lon=...)
-```
+The previous implementation's 22.7-minute GRIT initialization was rejected.
+Replace eager worldwide catchment preparation, not the useful compact runtime
+work. Opening or the first useful request must not scan all catchment IDs,
+attributes or geometries. Moving that work from opening into the first query would
+not satisfy the outcome. Trust upstream dataset validity; do not make engine
+opening a comprehensive dataset audit.
 
-Users must not construct internal graph objects, manage Parquet readers, or manually
-download the hosted dataset to use that interface. This Effort supplies its data
-foundation; it does not implement the complete delineation operation or promise
-compatibility with every historical option and result detail. Those belong to the
-later engine composition work.
+## Input and access
 
-## Required access, including remote datasets
+Use the finalized root manifest for artifact discovery, including graph and named
+snap declarations. `source-manifest.json` is provenance, not the runtime discovery
+manifest. Preserve additional fields and source caveats. Rasters are not delivered
+by this vector contract; do not infer raster files from its source manifest or
+settle raster APIs here.
 
-Remote access is essential, not a follow-up feature. Support local datasets, public
-HTTP(S) dataset roots, AWS S3, and S3-compatible storage configured for services such
-as Cloudflare R2 and Hetzner. Public GRIT is the normal hosted-user path and requires
-no credentials:
+Required real-scale input:
 
-`https://basin-delineations-public.upstream.tech/grit/hfx-v0.3.0/`
+`https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/`
 
-Use manifest-declared paths relative to the dataset root. Do not require bucket or
-HTTP directory listing to discover known artifacts. Keep endpoint, authentication,
-and transport configuration separate from hydrologic data and algorithms. Private
-sources may need optional configuration; public HTTPS must not require AWS setup.
-Do not hard-code a Cloudflare-specific storage engine or leak one source's
-credentials into another source's requests.
+This public GRIT bundle has 22,337,300 units and DAG topology. Its graph and two
+snap artifacts retain their 0.3.0 bytes. Catchments are compressed Arrow IPC file
+batches containing attributes and exact WKB. The uncompressed numeric lookup maps
+positive int64 IDs to batch/row addresses. The small directory narrows lookup
+batches; membership in a directory range is not proof that an ID exists.
 
-Use **obstore** for object access, **PyArrow** for Parquet decoding and columnar
-representations, and **NumPy/Arrow** for compact numeric operations. Prefer existing
-library facilities over custom transport, storage, or binary cache formats. Obstore
-provides streaming downloads, range reads, HTTP/S3 backends, and documented PyArrow
-integration through its filesystem adapter. Verify that bridge on the actual access
-paths: its existence does not prove efficient request batching or buffering. A
-concrete adapter gap may justify another established integration, not an unmeasured
-transport rewrite. Focused graph algorithms over these representations are welcome.
+Read directory and IPC footer/schema metadata, then only the numeric lookup and
+catchment batches needed by a selection. Check exact IDs and addressed rows;
+group shared reads for batched requests. Do not infer catchment positions from
+graph order, ID values, Hilbert order, equal counts or matching batch boundaries.
+The 8 MiB logical batch budget is not a hard allocation or response-size limit;
+valid oversized singleton rows must work. IPC compression and WKB still require
+decoding. Do not claim zero-copy geometry.
 
-Download the original graph artifact to a local file and read its required columns
-there. The measured whole-object path outperformed remote projected loading for
-HydroBASINS. Reuse a verified local copy rather than reconstructing a new storage
-format. This must not trigger downloads of complete polygon or snap artifacts.
+Support local paths, anonymous HTTP(S), AWS S3 configuration, and S3-compatible
+storage such as Hetzner and R2. Use manifest-relative paths without directory
+listing. Keep transport/authentication separate from hydrologic code; public HTTPS
+must not require AWS credentials. Prevent credentials or cached objects from being
+reused against the wrong source.
 
-Provide basic source-specific identity checks, safe completion of downloads, and
-an explicit resource lifetime. Do not treat filename existence or the manifest
-hash alone as proof of reusable content. Never expose an incomplete download as a
-valid graph. Basic correctness cannot wait for #7; elaborate cache freshness
-policies, eviction budgets, cross-process coordination, and concurrent-service
-resource management remain primarily that Effort's responsibility.
+Build on **obstore, PyArrow and NumPy/Arrow**, with Shapely/GEOS for selected geometry
+decoding. Prefer established transport and file adapters. Verify efficient range
+access on the actual IPC and Parquet paths; adapter availability alone proves
+neither request batching nor bounded reads. A measured adapter gap can justify
+another established integration, not a custom storage engine or blindly copying
+the benchmark's transport into production.
 
-## Runtime capabilities and guarantees
+The unchanged graph may be acquired as its original local Parquet artifact and
+prepared into compact resident topology. Existing evidence supports whole-graph
+acquisition followed by local decoding, not remote serial projection. Local sources
+need not be copied into another cache. Reuse verified original artifacts and
+in-process prepared data; do not rebuild them for every query. Define what opening,
+first topology use and reopening each cost. Preserve safe download completion and
+source-specific identity. Do not invent a binary topology cache format. Elaborate
+persistent-cache policy remains #7.
 
-Choose a small coherent set of typed interfaces backed by bulk arrays and batches,
-not one Python object, dictionary, or collection per unit. The names and exact class
-boundaries are implementation choices. The following capabilities are required.
+Honor the 0.4.0 integrity contract: sizes and bounded hashes for consumed lookup
+and catchments, full directory digest, lookup-to-catchment digest binding, and a
+consistent immutable artifact set. Pin strong transport ETags or object versions
+across ranges; they are not SHA-256 digests. Verify range status, Content-Range and
+body lengths over identity-encoded bytes. Bounded hashes are mismatch detection,
+not whole-file integrity. Reject changed identities and incomplete cached artifacts.
+Do not trust filename existence alone or require worldwide rehashing on every
+ordinary remote opening. Consumers requiring independent full integrity have a
+different cost from access to this trusted, producer-verified immutable publication.
 
-### Dataset metadata and unit identity
+## Runtime capabilities
 
-Represent the manifest, dataset-local levels, artifact references, and named snap
-sets with small typed records. Preserve other auxiliary declarations, including
-raster references, as metadata for their later consumers; do not read raster pixels
-or settle raster processing APIs here.
+Use a small coherent set of strongly typed interfaces backed by bulk arrays and
+batches. Avoid one Python object or dictionary per dataset unit. Class names and
+reversible internal widths remain implementation choices.
 
-HFX unit IDs are positive int64 identifiers scoped to one compiled dataset. They
-need not survive recompilation and must not be narrowed or confused with row
-positions. Internal positions may use a narrower checked integer width. A selection
-or positional view must retain enough dataset/table identity to prevent accidental
-use against another source or ordering.
+- **Identity and metadata:** preserve positive int64 dataset-local IDs, levels,
+  artifact declarations and named snap sets. Checked narrower internal positions
+  are acceptable. Selections retain source/table identity so they cannot silently
+  address another dataset or ordering.
+- **Topology:** compact same-level adjacency and numeric lookup support inclusive
+  upstream selection. Include the terminal and each reachable unit once, including
+  DAG reconvergence. Unknown requested IDs and unusable referenced IDs are errors.
+  Do not restrict upstream membership to a spatial search window. Shared prepared
+  topology is read-only; visited/frontier/output state belongs to each query.
+  Account for graph-sized workspace even when the output is small. Avoid duplicate
+  retained edge representations.
+- **Attributes:** supply identity, level, nullable parent, local and nullable
+  upstream area, outlet, bounds and optional source fields when needed. Preserve
+  Arrow types and null semantics. Parent containment is separate from same-level
+  connectivity. Do not rebuild the old worldwide nullable-attribute catalog.
+  Attribute access may decode its containing IPC batch, including WKB buffers;
+  it must not decode all those WKB values into geometry objects unnecessarily.
+- **Selected polygons:** retrieve by unit IDs with explicit ordering and duplicate
+  semantics. Preserve caller order and duplicates, and fail rather than silently
+  dropping missing requested units. Carry IDs alongside WKB through gathering and
+  decoding. Select compact results before geometry decoding; do not let small views
+  pin discarded large batches or retain serialized and decoded copies indefinitely.
+- **Spatial catchment candidates:** supply conservative bounds/level candidate
+  access without scanning the entire IPC catchment file. The published lookup is
+  an ID index, not a spatial index. Graph bbox columns and Parquet statistics are
+  available evidence for candidate discovery; investigate and verify that path.
+  Return selected catchment records through the published lookup. Bbox overlap is
+  not exact containment. Preserve degenerate bounds and conservative handling of
+  float32 bounds against full-precision coordinates.
+- **Snap candidates:** support every declared snap set. Feature IDs differ from
+  referenced unit IDs; many features may reference one unit. Respect declared and
+  referenced levels, weights, nullable roles and correct absent/null-bounds fallback.
+  Do not invent cross-set weight comparability. Candidate retrieval is not final
+  radius testing, nearest-point calculation or snap ranking.
 
-### Resident topology and contributing selections
+The dataset owns reusable readers, metadata and resident arrays. Queries own
+workspace and selected results. Provide explicit resource release and clear
+mutability/lifetime rules. Preserve useful tests and guarantees from the paused
+runtime, not its eager preparation or duplicate decoding work.
 
-Keep compact same-level adjacency, IDs, levels, and numeric lookup resident. Dense
-runtime positions are the supported traversal direction; they do not require
-renumbering the dataset. Arrow list offsets/values and NumPy-compatible buffers are
-suitable building blocks. Avoid permanently retaining duplicate edge representations
-solely because the experiment kept both for comparison.
+## Validation boundary
 
-Supply a small working inclusive upstream-traversal path: terminal included once,
-all reachable upstream units included once, including DAG reconvergence. Unknown
-terminal or referenced IDs are errors, not empty adjacency. Do not constrain
-upstream membership to the outlet's spatial search window. Non-terminal traversal
-order need not reproduce incidental Rust ordering.
+Validate fields and representations actually used: supported version/schema,
+safe relative paths, artifact identity, required types/nullability, capacities
+before narrowing, bounds before indexing, exact lookup matches, and selected
+references/levels where access depends on them. Fail clearly on malformed consumed
+records rather than returning plausible incomplete results. Selected WKB decoding
+must enforce the required geometry type without unnecessary repeated decoding.
 
-Shared topology is read-only after preparation. Frontier, visited state, and result
-selection belong to the query. Account for graph-sized work arrays and their lifetime;
-a small result does not necessarily imply small traversal workspace.
+Do not globally scan catchment attributes to certify parents, areas, outlets or
+graph/catchment correspondence. Do not run comprehensive graph acyclicity/tree or
+hydrologic geometry audits during opening. The producer owns dataset validity.
+Numeric lookup and edge translation must still be unambiguous and safe. A visited
+set prevents repeated traversal; it does not certify a valid DAG. Document these
+limits and replace old tests that promised global auditing rather than silently
+claiming the previous guarantees.
 
-### Unit attributes and catchment location
+## Evidence and performance acceptance
 
-Provide projected access to the full HFX unit information downstream operations
-need: identity, level, nullable parent, local and nullable upstream area, outlet,
-bounds, geometry, and optional audit attributes. Preserve types and null semantics;
-null parent/upstream area is not zero, and `has_up_area=true` does not imply every
-row is populated. Source labels must not control engine behavior.
+The [producer verification record](https://github.com/pourpoint-tools/hfx/blob/9000d57311382b1549eb5bc5eedb646d03a387aa/docs/v0.4.0/grit-verification.md)
+records independent equality for all 22,337,300 catchments and lookup addresses,
+upload verification and public selective reads. It does not establish Pourpoint
+startup, snapping or complete delineation performance. GRIT's partitioned DAG
+upstream-area semantics and null values remain source facts, not errors to repair.
+Preserve its attribution and CC BY-NC 4.0 terms; do not commit raw datasets.
 
-Keep parent containment separate from same-level flow connectivity. Support
-parent/level lookup without decoding polygons. Maintain an explicit catchment-ID
-locator built from catchment data, independently of graph order. Equal row counts,
-Hilbert sorting, or matching group boundaries do not prove graph/catchment alignment.
-A general Parquet ID predicate is not a replacement for this locator.
+Build on [#9](https://github.com/pourpoint-tools/pourpoint/issues/9),
+[#19](https://github.com/pourpoint-tools/pourpoint/issues/19), the
+[compact topology experiments](../../experiments/dense_topology/README.md), and
+[local/HTTP/Hetzner catchment evidence](../../experiments/catchment_read/hetzner_results/README.md).
+Published lookup removes startup scanning; byte-budgeted IPC reduces expensive
+block overread. Small-request latency was mixed, not a universal B speed win.
+Those candidate studies started after upstream IDs were known.
 
-Keep the scalar information and indexes needed for reliable access resident; permit
-other attributes to be projected when requested. Avoid redundant indexes and
-attribute copies where safe sharing is established explicitly, not assumed.
+A focused 0.4.0 discovery run on 2026-10-08 used the same cached graph and terminal
+`22333245` as the rejected initialization. It measured:
 
-### Selected polygons and snap candidates
+| Phase | Seconds |
+| --- | ---: |
+| Cached graph SHA-256, local decode, compact topology preparation | 1.283 |
+| Remote metadata, selective lookup and catchment access | 2.322 |
+| Inclusive traversal and terminal polygon decode | <0.001 |
+| Total through first useful result | 3.612 |
 
-Support unit-ID polygon retrieval and spatial candidate access, including level
-eligibility, without loading complete geometry tables. Select relevant row groups,
-project columns, filter rows, and only then decode geometry when required. Carry
-IDs alongside WKB or decoded geometries through filtering, gathering, and reordering.
-Missing requested units must not silently disappear. Make ordering and duplicate
-request semantics explicit rather than depending on scan order.
+The new run returned complete attributes and WKB for all 326 upstream units and
+decoded the terminal polygon. Nine HTTP GETs returned 4,224,821 response-body bytes;
+only lookup batch 340 and catchment batch 6655 were selected. Independent ID-domain
+traversal matched membership, and independent source Parquet groups 5451/5452
+matched all selected values, schema metadata and exact WKB after measurement.
 
-Use Arrow WKB batches for serialized geometry and mature Shapely/GEOS operations
-for selected decoding. Do not retain both serialized and decoded forms indefinitely
-by default. Small views must not accidentally pin large discarded candidate buffers;
-a compact copy can be preferable to nominally zero-copy retention.
+The old run took 1,360.237 seconds to initialize plus 1.349 seconds for its first
+attributes/terminal-polygon query. Its initialization used a cached graph but still
+made 5,458 requests and received 1,246,090,633 response-body bytes. The new prototype
+removed worldwide catalog/locator construction and the global Kahn audit. It also
+used direct HTTP rather than the old proxied obstore path. This is evidence for the
+redesign, **not an isolated format-only speedup or production implementation**.
 
-Handle every declared snap set, not a singleton root-level snap file. Snap-feature
-ID and referenced unit ID are different domains; multiple features may reference
-one unit. Snap level eligibility comes from the referenced unit and declaration.
-Preserve weights and optional roles without inventing cross-set comparability.
-Missing/null snap bounds must take a correct fallback path rather than excluding
-possibly relevant features. Spatial bounds identify candidates, not exact radius,
-containment, or final ranked results. Preserve degenerate bounds and conservative
-boundary behavior when float32 bounds meet full-precision coordinates.
+Both exclude graph downloading. The new run excludes spatial/snap readiness and
+queries, uses a selected-row Python dictionary rather than a production batch API,
+and includes per-row witness serialization/hashing in timed access. It was one
+fresh-process run after a one-ID smoke check; laptop, OS and CDN caches were
+uncontrolled. Peak RSS through readiness was 2,855,813,120 bytes versus the old
+2,984,624,128: this does not establish a meaningful peak-memory improvement.
+Resident topology remained 670,353,612 bytes, with 111,686,500 bytes of query
+workspace. Graph conversion temporaries still deserve attention.
 
-The reader supplies the necessary data and decoded forms; final outlet selection,
-snap ranking, watershed union, geometry repair policy, and area calculation remain
-in their downstream operations.
+The maintainer accepted this as sufficient design evidence to proceed with the
+whole reader/runtime Effort. **3.612 seconds is not a fixed acceptance threshold.**
+Verify the production integrated path rather than substituting this prototype result.
+Measure fully cold access, cached-graph initialization through first useful access,
+and repeated/batched reuse separately. Show preparation and deferred work so a cheap
+`open()` cannot hide expensive first use. Record time, actual request/body-byte
+counts, retained buffers and peak memory with dataset identity and settings.
+Compressed object size is not network traffic. Explain any substantial regression
+or unnecessary work before claiming delivery; do not claim an end-to-end delineation
+latency or concurrent-service resource budget.
 
-## Validation and ownership
+The discovery receipts and code are retained outside Git at
+`~/.prime/agent/session-artifacts/01a11843-684e-72db-bb12-6a8534bf214a/grit04-comparison/`
+(`README.md`, `measured.json`, `phase-summary.json`, `provenance.json`, fixture
+red/green logs). The committed vision records the useful findings so implementation
+does not depend on that local directory being available.
 
-Opening prepares the loaded structural information for safe use: validate relevant
-schemas, nullability, counts, ID uniqueness, graph/catchment correspondence, levels,
-references, and parent relationships. Check the graph invariants relied on by the
-runtime, including acyclicity and declared tree/DAG constraints; a visited set merely
-terminating on a cycle is not validation. Check capacity before narrowing positions
-or offsets. Errors should identify the artifact and offending field/unit where
-possible.
+## Completion and boundaries
 
-Validate selected spatial records when read, including expected geometry types and
-snap references. Do not silently skip malformed selected data and return a plausible
-but incomplete selection. Clearly document what opening and each access operation
-establish. This runtime is not a replacement for the full HFX validator and must not
-read every geometry on open to certify nesting, sibling disjointness, or outlet
-placement. Checks deferred until access must not be advertised as globally complete.
+Deliver verified **open → topology selection → attributes → selected geometry**
+through production interfaces, plus independent spatial catchment and both GRIT
+snap-set candidate paths. Use independent small fixtures for sparse/shuffled IDs,
+independent artifact orders, levels/parents/nulls, missing IDs, reconvergent DAGs,
+lookup boundaries, oversized batches, changed objects, malformed consumed records,
+multiple snap sets and absent/null/degenerate bounds. Test resource release,
+selection identity, ordering/duplicates and selected-buffer lifetimes. Reuse existing
+coverage where it proves the revised contract; do not duplicate test inventories.
 
-The dataset owns reusable readers, metadata, and resident arrays. Operations own
-query state and selected results. Define resource release and mutability clearly.
-Count decoded geometry, Arrow buffers, NumPy arrays, temporary conversion copies,
-reader prefetch, and retained views separately where practical. Row-count batch
-limits do not guarantee byte limits, and reading selected groups does not eliminate
-Parquet page/group overread.
+Use public 0.4.0 GRIT for real-scale HTTP integration and controlled range tests to
+expose accidental full catchment/snap downloads. Exercise local and S3-compatible
+paths with valid 0.4.0 fixtures; existing HydroBASINS candidate studies are evidence,
+not a requirement to support their obsolete wrapper or old 0.3.0 layout. Verify
+AWS configuration without claiming unperformed live-provider testing. Keep raw
+source data and credentials outside Git.
 
-## Evidence to build on
+No complete outlet resolution/snapping, watershed dissolve, area calculation,
+raster windows/refinement, CLI, release work or general cache framework belongs
+here. #5 supplies whole-unit delineation, #4/#6 handle raster work, #7 extends
+access/cache lifecycle, and #8 completes the public engine.
 
-Research issue [#9](https://github.com/pourpoint-tools/pourpoint/issues/9) led to the
-committed [experiments](../../experiments/README.md). Read their implementations,
-settings, exclusions, and results before adapting them. They are evidence, not
-production modules to copy unchanged.
+The root checkout currently contains research, not delivered production behavior.
+The paused branch `feat/hfx-runtime-foundation` at
+`7f9ce90fbba539ecc0062b6c3bb3b3b8ab76c29a` preserves reusable topology, selection,
+spatial, storage and geometry work. Adapt useful code and tests deliberately; do not
+merge that rejected implementation wholesale. Its existing worktree also holds
+untracked verification records. Preserve unique files and history before any
+separately authorized cleanup; a fresh implementing agent must not assume it is safe
+to delete. Implement on a focused branch and deliver through a reviewed PR to `main`.
 
-- [Graph acquisition](../../experiments/arrow_read/FOLLOWUP.md): complete HydroBASINS
-  graph download plus local preparation took 4.99/4.69 seconds versus 121.25/113.32
-  seconds for remote Arrow projection, with exact graph equality. Native remote
-  wire traffic was not measured. This supports the download approach, not a promised
-  latency or a universal claim about all backends.
-- [Topology](../../experiments/dense_topology/README.md): 3,786,228 units retained
-  81.04 MB graph/levels and 45.43 MB numeric lookup; comparison-only dense edges added
-  14.02 MB. Per-query workspace was 18.93 MB excluding output. Dense traversal was
-  viable, but already-small traversal times were not the principal bottleneck.
-- [Polygon access](../../experiments/selective_access/results/followup/README.md):
-  explicit catchment lookup reduced candidate groups from 209 to 1 for one selection
-  and from 94 to 1 for another. Fresh-process peaks were approximately 404 MB and
-  1.50 GB for the locator paths, versus 3.3–3.6 GB for filtered scans. These local
-  cases each retained three identical decoded geometries; they are not a workload
-  distribution or remote-read benchmark.
-- The largest selected group materialized 245.52 MB of WKB for about 2.46 MB of
-  selected WKB. Selective decoding is necessary but does not erase overread.
-- The prior TDX probe covered 15,936,428 units: 351.21 MB Arrow graph plus 191.24 MB
-  lookup, with 975.32 MB peak process RSS. It excluded parents, catchment lookup,
-  geometry, snapping, and traversal workspace. Its roughly 27-minute serial remote
-  read was diagnostic, not evidence that the format needed changing.
-
-All sizes above are decimal. Laptop timings were uncontrolled observations. Do not
-sum separate experiment peaks into an integrated memory claim. The experiments did
-not measure complete delineation or establish obstore–Arrow performance.
-
-The live public GRIT manifest was separately inspected: HFX 0.3.0, **22,337,300
-units**, DAG topology, and distinct level-0/level-1 snap declarations. Its graph was
-699,720,490 bytes; graph, catchment, and both snap objects accepted anonymous HTTPS
-byte ranges. Those metadata checks did not exercise a complete Python access path.
-GRIT, not just tree-only HydroBASINS or TDX, is therefore required integration evidence.
-
-## Evidence of completion
-
-Deliver usable typed runtime structures and local/remote readers, with a verified
-integrated **open → topology selection → attributes → selected geometry** path.
-Also verify spatial catchment and snap candidate access independently of final
-snapping. Downstream agents should be able to consume these capabilities without
-implementing another HFX loader or index.
-
-Use independent small valid/invalid cases for sparse/shuffled IDs, independent file
-orders, multiple levels and parents, nulls, missing IDs, malformed records, DAG
-reconvergence, cycles, multiple snap sets, many-to-one snap references, and absent/
-null/degenerate bounds. Compare exact membership and geometry identity, not only
-counts or final polygon area.
-
-Use the complete, unchanged HydroBASINS dataset as the main reproducible large
-fixture and public GRIT/R2 as a required remote integration path. Exercise the
-S3-compatible path against the available Hetzner data, with provider/configuration
-coverage for AWS S3 rather than provider-specific hydrologic code. Include controlled
-range/read tests so a successful query cannot conceal a whole polygon or snap
-download. Preserve raw datasets and credentials outside Git, with attribution.
-
-Measure the integrated preparation and query peak, retained topology/catalog/
-locator buffers, selected and intermediate geometry, and first/repeated access.
-Instrument request counts/response bytes for the selected remote verification, or
-identify an explicit verification blocker; stored compressed sizes are not wire
-traffic. Record settings and dataset identity. Do not invent numerical latency
-acceptance thresholds from a shared laptop. Verify buffer lifetimes and repeated
-access without claiming production concurrent-query budgets, which remain later work.
-
-## Boundaries and repository context
-
-No HFX 0.4.0, fabric-specific normalization, new producer layout, or custom storage
-engine is required. Raster pixels, raster windows, refinement, complete snapping,
-dissolve/area algorithms, CLI recreation, releases, and unrelated tooling are out of
-scope. Preserve declarations for later use without expanding this vector-focused
-Effort into raster design. #5 supplies whole-unit delineation, #4/#6 handle raster
-work, #7 extends dataset/cache lifecycle, and #8 completes the public engine.
-
-The repository is a fresh Python package; research lives under `experiments/` and
-production behavior is not yet implemented. Use `uv`, strong typing throughout,
-Ruff, ty, and dependency-provided test utilities where suitable. Do not assume the
-root type-check command covers experiment files. Preserve unrelated worktree edits.
-
-The existing [HFX 0.3.0 contract](https://github.com/CooperBigFoot/hfx/blob/c18a8a6a115e2045080d8752279d39db2b9b29b6/spec/HFX_SPEC.md)
-and [snap v2](https://github.com/CooperBigFoot/hfx/blob/c18a8a6a115e2045080d8752279d39db2b9b29b6/spec/aux/snap/v2.md)
-are the input references. The clean-slate sibling HFX repository currently pins
-these references rather than providing the older `../hfx/spec/HFX_SPEC.md` path.
-The [Rust baseline](https://github.com/CooperBigFoot/pourpoint/tree/60e3d6e383546ea6ed20e68fe4d77959c816a48c),
-available locally under `../deprecated/pourpoint`, is source/regression evidence,
-not a requirement to preserve accidental copies, eager reads, or suspected defects.
-
-For storage integration, consult [obstore's PyArrow example](https://developmentseed.org/obstore/latest/examples/pyarrow/),
-[file-reader caveats](https://developmentseed.org/obstore/latest/api/file/), and
-[filesystem integration](https://developmentseed.org/obstore/latest/integrations/fsspec/).
-The inspected `reformatters` project uses obstore download helpers, but its
-existence-only cache reuse, producer-oriented retry budgets, and Zarr/Icechunk/
-Kubernetes infrastructure are not this engine's requirements. In particular,
-concatenating requested byte ranges does not create a valid random-access Parquet
-file. Leave reversible class names, buffer widths, and adapter wiring to the
-implementing agent within these guarantees.
+Use `uv`, strong typing, Ruff, ty and dependency-provided test utilities. The current
+AGENTS.md reference to `../hfx/spec/HFX_SPEC.md` is stale: the finalized sibling
+contract is `../hfx/docs/v0.4.0/vector-data.md`, pinned above. The
+[Rust baseline](https://github.com/CooperBigFoot/pourpoint/tree/60e3d6e383546ea6ed20e68fe4d77959c816a48c)
+is regression evidence, not authority to reproduce eager reads or suspected defects.
