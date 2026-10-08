@@ -34,6 +34,7 @@ def ipc(schema: pa.Schema, batches: list[pa.RecordBatch]) -> bytes:
 def fixture_reader(
     *,
     wrong_row: bool = False,
+    dictionary_labels: bool = False,
     oversized: bool = False,
     directory_rows: int = 3,
     digest: bytes | None = None,
@@ -73,6 +74,12 @@ def fixture_reader(
     if oversized:
         rows[2]["geometry"] = b"x" * (8388608 + 1)
     table = pa.Table.from_pylist(rows, schema=schema)
+    if dictionary_labels:
+        labels = pa.DictionaryArray.from_arrays(
+            pa.array([0, 1, None], type=pa.int8()), pa.array(["unused" * 10000, "selected"])
+        )
+        table = table.append_column(pa.field("label", labels.type, metadata={b"meaning": b"source"}), labels)
+        schema = table.schema
     catchments = ipc(schema, [table.slice(0, 2).to_batches()[0], table.slice(2).to_batches()[0]])
     data = manifest_data()
     data["artifacts"]["catchments.arrow"]["sha256"] = hashlib.sha256(catchments).hexdigest()
@@ -209,3 +216,11 @@ def test_lookup_batch_boundary_sparse_int64_ids() -> None:
     assert reader.last_access.catchment_batches == (0, 15, 16)
     with pytest.raises(KeyError):
         reader.read([offset + 131071])
+
+
+def test_selected_dictionary_values_are_compact() -> None:
+    reader, _ = fixture_reader(dictionary_labels=True)
+    result = reader.read([2, 700, 2])
+    assert result["label"].to_pylist() == ["selected", None, "selected"]
+    assert result.schema.equals(reader.schema, check_metadata=True)
+    assert result.get_total_buffer_size() < 1000

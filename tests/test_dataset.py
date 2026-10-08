@@ -56,7 +56,8 @@ def test_open_defers_graph_and_preserves_full_selected_schema(hfx: Path, monkeyp
     monkeypatch.setattr(pq.ParquetFile, "read", observed)
     with Dataset.open(hfx) as data:
         assert reads == []
-        assert data.buffer_bytes == {"topology": 0, "query_workspace": 0}
+        assert data.buffer_bytes["topology"] == data.buffer_bytes["query_workspace"] == 0
+        assert data.buffer_bytes["source_read_buffers"] > 0
         records = data.records([40, 10, 40])
         assert reads == [["id", "level", "upstream_ids"]]
         assert records.table["id"].to_pylist() == [40, 10, 40]

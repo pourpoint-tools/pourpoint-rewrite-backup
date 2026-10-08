@@ -14,6 +14,7 @@ from typing import BinaryIO, Protocol
 import numpy as np
 import pyarrow as pa
 
+from pourpoint._selection import compact_dictionaries
 from pourpoint._validation import CATCHMENT_FIELDS, schema_check
 from pourpoint.metadata import Fingerprint, Manifest
 
@@ -139,4 +140,4 @@ class CatchmentReader:
         table = pa.Table.from_batches(pieces, schema=self.schema)
         result = table.take(pa.array(np.argsort(positions), type=pa.int64()))
         self.last_access = Access(tuple(sorted(groups)), tuple(sorted(addresses)))
-        return result
+        return compact_dictionaries(result)

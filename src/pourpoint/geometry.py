@@ -8,6 +8,8 @@ import numpy.typing as npt
 import pyarrow as pa
 import shapely
 
+from pourpoint._selection import compact_dictionaries
+
 
 @dataclass(frozen=True)
 class DecodedGeometry:
@@ -58,6 +60,7 @@ class GeometryBatch:
         # Arrow slices can pin discarded rows. Take after dropping WKB so the
         # result owns only selected attributes, without copying geometry bytes.
         attributes = self.table.drop(["geometry"]).take(pa.array(np.arange(self.table.num_rows, dtype=np.int64)))
+        attributes = compact_dictionaries(attributes)
         ids = attributes["id"].combine_chunks().to_numpy()
         ids.flags.writeable = False
         return DecodedGeometry(ids, geometries, attributes)

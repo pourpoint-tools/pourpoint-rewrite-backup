@@ -64,3 +64,22 @@ def test_snap_references_duplicates_and_empty_selection() -> None:
     assert decoded.attributes["stem_role"].null_count == 2
     empty = GeometryBatch(table.slice(0, 0), "snap", "snap.parquet").decode()
     assert empty.ids.size == empty.geometries.size == 0
+
+
+def test_decoded_attributes_release_unused_dictionary_values() -> None:
+    dictionary = pa.array(["discard" * 10000, "chosen", "unused" * 10000])
+    labels = pa.DictionaryArray.from_arrays(pa.array([1, None, 1], type=pa.int8()), dictionary, ordered=True)
+    nested = pa.StructArray.from_arrays([labels], names=["label"])
+    table = pa.table(
+        {
+            "id": pa.array([1, 2, 3], type=pa.int64()),
+            "geometry": [shapely.box(0, 0, 1, 1).wkb] * 3,
+            "labels": labels,
+            "nested": nested,
+            "lists": pa.ListArray.from_arrays(pa.array([0, 1, 2, 3]), labels),
+        }
+    )
+    result = GeometryBatch(table, "polygon", "catchments.arrow").decode()
+    assert result.attributes.schema.equals(table.drop(["geometry"]).schema, check_metadata=True)
+    assert result.attributes.to_pylist() == table.drop(["geometry"]).to_pylist()
+    assert result.attributes.get_total_buffer_size() < 200

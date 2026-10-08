@@ -69,3 +69,23 @@ def test_failed_graph_validation_cannot_be_bypassed_by_retry(hfx: Path) -> None:
         for _ in range(2):
             with pytest.raises(ValueError, match="bbox_minx"):
                 data.upstream(40)
+
+
+def test_local_graph_change_is_rejected_after_topology_preparation(hfx: Path) -> None:
+    path = hfx / "graph.parquet"
+    table = pq.read_table(path)
+    pq.write_table(table, path, row_group_size=2, compression=None, use_dictionary=False)
+    refresh_fingerprint(hfx, "graph.parquet")
+    with Dataset.open(hfx) as data:
+        assert data.catchment_candidates((0.5, 0.5, 0.5, 0.5), levels=[1]).table["id"].to_pylist() == [10]
+        original_size = path.stat().st_size
+        for name in ("bbox_minx", "bbox_maxx"):
+            table = table.set_column(
+                table.schema.get_field_index(name),
+                table.schema.field(name),
+                pa.array([100] * table.num_rows, type=pa.float32()),
+            )
+        pq.write_table(table, path, row_group_size=2, compression=None, use_dictionary=False)
+        assert path.stat().st_size == original_size
+        with pytest.raises(ValueError, match="changed"):
+            data.catchment_candidates((0.5, 0.5, 0.5, 0.5), levels=[1])

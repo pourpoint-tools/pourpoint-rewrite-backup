@@ -87,6 +87,8 @@ def test_local_bounded_and_close(tmp_path: Path) -> None:
         stream = source.open_artifact("file", fingerprint(data), bounded=True)
         stream.seek(123456)
         assert stream.read(17) == data[123456:123473]
+        assert source.buffer_bytes >= 17
+    assert source.buffer_bytes == 0
     with pytest.raises(ValueError, match="closed"):
         stream.read(1)
 
@@ -242,3 +244,45 @@ def test_bounded_digest_and_changed_local_file(tmp_path: Path) -> None:
         path.write_bytes(b"changed")
         with pytest.raises(ValueError, match="changed"):
             stream.read(1)
+
+
+def test_graph_identity_detects_mutation_without_rehash(tmp_path: Path) -> None:
+    data = b"original"
+    graph = tmp_path / "graph.parquet"
+    graph.write_bytes(data)
+    with Source(tmp_path) as source:
+        selected = source.graph_path(tmp_path / "cache", "graph.parquet", fingerprint(data))
+        source.check_graph(selected)
+        graph.write_bytes(b"modified")
+        with pytest.raises(ValueError, match="changed"):
+            source.check_graph(selected)
+
+
+def test_cached_graph_identity_detects_replacement(origin: tuple[str, OriginState], tmp_path: Path) -> None:
+    url, state = origin
+    with Source(url, storage_options={"client_options": {"allow_http": True}}) as source:
+        graph = source.graph_path(tmp_path, "graph", fingerprint(state["data"]))
+        source.check_graph(graph)
+        replacement = tmp_path / "replacement"
+        replacement.write_bytes(state["data"])
+        replacement.replace(graph)
+        with pytest.raises(ValueError, match="changed"):
+            source.check_graph(graph)
+
+
+def test_graph_change_during_verification_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from typing import BinaryIO
+
+    data = b"original"
+    graph = tmp_path / "graph.parquet"
+    graph.write_bytes(data)
+    original_digest = hashlib.file_digest
+
+    def changed_digest(stream: BinaryIO, algorithm: str) -> object:
+        digest = original_digest(stream, algorithm)
+        graph.write_bytes(b"modified-after-hash")
+        return digest
+
+    monkeypatch.setattr(hashlib, "file_digest", changed_digest)
+    with Source(tmp_path) as source, pytest.raises(ValueError, match="changed during verification"):
+        source.graph_path(tmp_path / "cache", "graph.parquet", fingerprint(data))

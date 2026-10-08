@@ -27,15 +27,17 @@ Source normalization, rasters and full delineation are outside this interface.
   It checks selected WKB type/coordinates and removes WKB from decoded attributes.
   Decoding is not zero-copy and is not cached. Retaining both returned objects is
   the caller's explicit choice. Selected buffers are compact copies, not slices
-  that pin discarded batches.
+  that pin discarded batches. Dictionary-encoded source columns retain only their
+  selected dictionary values, including dictionaries nested in Arrow containers.
 - The dataset owns readers, metadata and prepared arrays. Queries own workspaces
   and selected results. `close()` is explicit and idempotent; a context manager is
   preferred. Selected results remain usable after close. Selections from one
   dataset instance cannot address another. Instances are not thread-safe or a
   concurrent-service API. Metadata declarations should be treated as read-only.
 
-`buffer_bytes` reports resident numeric arrays and per-query workspace, not RSS,
-reader metadata, temporary conversion buffers or native GEOS allocations.
+`buffer_bytes` reports resident numeric arrays, fsspec serialized read-ahead buffers
+and per-query workspace. It excludes RSS, Arrow Parquet reader internals, reader
+metadata, temporary conversion buffers and native GEOS allocations.
 `last_access` reports selected batches or row groups for the latest access.
 It is a diagnostic, not network-traffic accounting.
 
@@ -77,7 +79,9 @@ Lookup/catchments check manifest sizes and first/last 64 KiB hashes. The directo
 checks its full digest; lookup schema binds the full catchment digest. Bounded
 hashes detect mismatches, not whole-file corruption. Trusted producer verification
 and immutable publication remain required. Graph downloads complete atomically
-only after full SHA-256 verification. Existing files are never trusted by name alone.
+only after full SHA-256 verification. Existing files are never trusted by name alone. Local originals and cached graph
+files pin device/inode/size/mtime across verification and subsequent reads; changed
+files fail before mixed spatial/topology results can be returned.
 ETags identify transport versions, not SHA-256 content. Independent full catchment
 integrity would have a different cost and is not done at ordinary opening.
 

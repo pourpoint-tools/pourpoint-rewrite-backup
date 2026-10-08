@@ -45,6 +45,7 @@ class Dataset:
     manifest: Manifest
     _source: Source
     _cache_dir: Path
+    _graph_path: Path
     _catchments: CatchmentReader
 
     def __init__(self) -> None:
@@ -86,24 +87,28 @@ class Dataset:
         if self._graph is None:
             path = self.manifest.graph
             local = self._source.graph_path(self._cache_dir, path, self.manifest.artifacts[path])
+            self._source.check_graph(local)
             reader = pq.ParquetFile(local, pre_buffer=False)
             try:
                 schema_check(reader.schema_arrow, GRAPH_FIELDS, path)
                 if reader.metadata.num_rows != self.manifest.unit_count:
                     raise ValueError(f"{path}: count differs from manifest unit_count")
+                self._source.check_graph(local)
             except BaseException:
                 reader.close()
                 raise
+            self._graph_path = local
             self._graph = reader
+        self._source.check_graph(self._graph_path)
         return self._graph
 
     @property
     def topology(self) -> Topology:
         self._ensure_open()
         if self._topology is None:
-            self._topology = Topology(
-                self._graph_reader().read(columns=["id", "level", "upstream_ids"]), topology=self.manifest.topology
-            )
+            table = self._graph_reader().read(columns=["id", "level", "upstream_ids"])
+            self._source.check_graph(self._graph_path)
+            self._topology = Topology(table, topology=self.manifest.topology)
         return self._topology
 
     @property
@@ -201,9 +206,11 @@ class Dataset:
         groups = candidate_groups(graph, envelope, levels=eligible, graph=True) if eligible else []
         ids: list[npt.NDArray[np.int64]] = []
         for group in groups:
+            self._source.check_graph(self._graph_path)
             candidate = graph.read_row_group(
                 group, columns=["id", "level", "bbox_minx", "bbox_miny", "bbox_maxx", "bbox_maxy"], use_threads=False
             )
+            self._source.check_graph(self._graph_path)
             nonnull(candidate, candidate.column_names, self.manifest.graph)
             bbox_check(candidate, self.manifest.graph, graph=True)
             mask = overlap(candidate, envelope, graph=True) & np.isin(candidate["level"].to_numpy(), eligible)
@@ -300,6 +307,7 @@ class Dataset:
         """Retained bulk arrays; excludes metadata, query results, native geometry and RSS."""
         self._ensure_open()
         return {
+            "source_read_buffers": self._source.buffer_bytes,
             "topology": 0 if self._topology is None else self._topology.buffer_bytes,
             "query_workspace": 0 if self._topology is None else self._topology.query_workspace_bytes,
         }

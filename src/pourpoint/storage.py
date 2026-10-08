@@ -20,6 +20,7 @@ from urllib.parse import unquote, urlsplit
 
 import obstore
 import pyarrow.parquet as pq
+from fsspec.caching import ReadAheadCache
 from fsspec.spec import AbstractBufferedFile
 from obstore.store import HTTPStore, LocalStore, ObjectStore, S3Store
 
@@ -64,6 +65,7 @@ class Source:
         self._local_root: Path | None = None
         self._closed = False
         self._files: dict[str, _ArtifactFile] = {}
+        self._graphs: dict[Path, tuple[int, int, int, int]] = {}
         self._fingerprints: dict[str, Fingerprint] = {}
         self._bounded: set[str] = set()
         self._parquet: dict[str, pq.ParquetFile] = {}
@@ -233,14 +235,14 @@ class Source:
         path = self._path(path)
         if self._local_root is not None:
             destination = self._local_root / path
-            self._verify_file(destination, fingerprint)
+            self._graphs[destination] = self._verify_file(destination, fingerprint)
             return destination
         directory = Path(cache_dir) / self.identity
         directory.mkdir(parents=True, exist_ok=True)
         destination = directory / f"{fingerprint.sha256}.parquet"
         if destination.exists():
             try:
-                self._verify_file(destination, fingerprint)
+                self._graphs[destination] = self._verify_file(destination, fingerprint)
                 return destination
             except ValueError:
                 pass
@@ -265,21 +267,60 @@ class Source:
                     output.write(chunk)
                 output.flush()
                 os.fsync(output.fileno())
-            self._verify_file(temporary, fingerprint)
+            identity = self._verify_file(temporary, fingerprint)
             os.replace(temporary, destination)
+            self._graphs[destination] = identity
+            self.check_graph(destination)
             return destination
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
 
     @staticmethod
-    def _verify_file(path: Path, fingerprint: Fingerprint) -> None:
-        if path.stat().st_size != fingerprint.size_bytes:
+    def _file_identity(path: Path) -> tuple[int, int, int, int]:
+        stat = path.stat()
+        return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
+
+    def check_graph(self, path: Path) -> None:
+        """Check the verified original before/after local Arrow reads, without hashing.
+
+        The local immutable-file trust model detects replacement, resizing and normal
+        modification. It does not defend against a writer restoring file timestamps.
+        """
+        if self._closed:
+            raise ValueError("source is closed")
+        if path not in self._graphs:
+            raise ValueError("graph was not verified by this source")
+        try:
+            identity = self._file_identity(path)
+        except OSError as exc:
+            raise ValueError(f"{path.name}: graph artifact changed") from exc
+        if identity != self._graphs[path]:
+            raise ValueError(f"{path.name}: graph artifact changed")
+
+    @classmethod
+    def _verify_file(cls, path: Path, fingerprint: Fingerprint) -> tuple[int, int, int, int]:
+        before = cls._file_identity(path)
+        if before[2] != fingerprint.size_bytes:
             raise ValueError(f"{path.name}: artifact size mismatch")
         with path.open("rb") as stream:
             digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        if cls._file_identity(path) != before:
+            raise ValueError(f"{path.name}: graph artifact changed during verification")
         if digest != fingerprint.sha256:
             raise ValueError(f"{path.name}: full SHA-256 mismatch")
+        return before
+
+    @property
+    def buffer_bytes(self) -> int:
+        """Bytes retained by fsspec read-ahead, excluding Arrow's internal buffers.
+
+        This counts serialized response buffers, not total process memory. Parquet
+        pre-buffering and decoded Arrow batches have separate ownership/accounting.
+        """
+        return sum(
+            len(cast(ReadAheadCache, stream.cache).cache) for stream in self._files.values() if stream.cache is not None
+        )
 
     def close(self) -> None:
         if self._closed:
