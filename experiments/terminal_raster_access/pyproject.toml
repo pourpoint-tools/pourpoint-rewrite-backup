@@ -1,0 +1,17 @@
+[project]
+name = "terminal-raster-access"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = ["rasterio>=1.4", "numpy>=2.2", "tifffile>=2025", "imagecodecs>=2025", "httpx>=0.28", "pyarrow>=25", "shapely>=2.1", "pyproj>=3.7"]
+[dependency-groups]
+dev = ["pytest>=8.3", "ruff>=0.12", "ty>=0.0.35"]
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+[tool.ruff.lint]
+select = ["E", "F", "W", "N", "I", "UP", "B", "C4", "SIM"]
+[tool.pytest.ini_options]
+testpaths = ["."]
+
+[tool.ty.src]
+include = ["."]
