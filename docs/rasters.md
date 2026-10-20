@@ -1,16 +1,18 @@
 # Native-grid raster access
 
-The [HFX 0.4.0 raster contract](https://github.com/pourpoint-tools/hfx/blob/bb7ea1ddb0c83e2a38968450e7163a921d5e3a4f/docs/v0.4.0/raster-data.md)
+The [HFX 0.4.0 raster contract](https://github.com/pourpoint-tools/hfx/blob/main/docs/v0.4.0/raster-data.md)
 optionally declares `hfx.aux.d8_raster.v2` pairs in the root manifest. The retained source manifest is provenance, not a discovery channel.
 Vector-only bundles remain valid. Raster headers are not opened for vector use.
+External artifact references resolve their declared HTTPS URL, fingerprint and
+retention commitment; the raster pair need not be stored beside the vectors.
 
 ```python
-from pourpoint import Dataset
+from pourpoint import HydroFabric
 
-with Dataset.open("/path/to/hfx") as dataset:
-    request = dataset.rasters.prepare((west, south, east, north))
+with HydroFabric("/path/to/hfx") as fabric:
+    request = fabric.rasters.prepare((west, south, east, north))
     # Inspect integer col, row, width, height and immutable grid before execution.
-    window = dataset.rasters.read(request)
+    window = fabric.rasters.read(request)
 ```
 
 Bounds default to EPSG:4326. Pass `crs="EPSG:8857"` for bounds already on that
@@ -34,8 +36,9 @@ There is no batch, scheduling or async API.
 ## Results and semantics
 
 `RasterWindow` contains caller-owned arrays, `transform`, `crs` and
-`accumulation_units`. Results survive later reads, mutations of later results and
-reader closure.
+`accumulation_units`, and the original native-grid `.request` descriptor. Results
+survive later reads, mutations of later results and reader closure. The descriptor
+records the exact grid/window for future raster export without reconstructing it.
 
 - `direction` is int8: **1 E, 2 SE, 3 S, 4 SW, 5 W, 6 NW, 7 N, 8 NE**.
   These are native grid neighbors: E increases column and S increases row, even
@@ -67,12 +70,12 @@ failures do not choose a coarse-watershed fallback.
 For raster-only access without even catchment metadata acquisition:
 
 ```python
-from pourpoint.metadata import Manifest
+from pourpoint.metadata import SpatialManifest
 from pourpoint.rasters import RasterReader
 from pourpoint.storage import Source
 
 with Source("/path/to/hfx") as source:
-    manifest = Manifest.parse(source.read_json("manifest.json"))
+    manifest = SpatialManifest.parse(source.read_json("manifest.json"))
     with RasterReader(source, manifest) as reader:
         window = reader.read(reader.prepare((west, south, east, north)))
 ```
@@ -82,7 +85,8 @@ One reader allows one active call. Future concurrent workers must create private
 Sources and reader pairs in their own threads, not share ordinary GDAL handles.
 Closing releases handles, not every process-wide GDAL cache. GDAL owns block-cache
 budgeting and any process-wide VSICURL state; Pourpoint adds no worker pool,
-custom raster cache or service-wide memory budget.
+separate raster cache or service-wide memory budget. Original TIFF ranges share
+the accumulating persistent cache described in [runtime access](runtime.md).
 
 Rasterio uses a Python opener with independent fsspec cursors over the existing
 Source's pinned obstore range access. It does **not** independently open the
@@ -93,7 +97,8 @@ signed configured-endpoint access; public GRIT is HTTP evidence, not a live
 credentialed S3 deployment test.
 
 Source requests send `Cache-Control: no-cache` to revalidate publication responses.
-Each Source retains its first manifest snapshot and never refreshes mid-lifetime.
+With persistent caching, the first manifest snapshot also survives reopening.
+`offline=True` replays acquired TIFF ranges without contacting the origin.
 An old vector-only snapshot is not supplemented by discovering undeclared files.
 Raster opening checks size and bounded head/tail hashes. Every new remote range
 uses the original strong ETag/version and validates the response. Cached bytes
@@ -101,17 +106,16 @@ remain part of that original snapshot; cached reads do not probe whether the
 latest remote object changed. Local identities are checked before/after calls,
 even on cached reads. Bounded checks are not whole-file integrity proofs.
 
-`Dataset.buffer_bytes` includes fsspec cursor buffers, not GDAL native caches or
+`HydroFabric.buffer_bytes` includes fsspec cursor buffers, not GDAL native caches or
 caller-owned result arrays. Array bytes and process RSS are different quantities.
-Rasterio 1.5.2 can also emit an unraisable Cython diagnostic when a range callback
-rejects changed data. The read still fails; Pourpoint does not suppress production
-errors or accept data from that response. Upstream source inspection found that
-the [Python read callback](https://github.com/rasterio/rasterio/blob/1.5.2/rasterio/_vsiopener.pyx#L274-L280)
-does not catch Python read errors, and
-[`stack_errors`](https://github.com/rasterio/rasterio/blob/1.5.2/rasterio/_err.pyx#L330-L348)
-does not protect error-handler cleanup with `finally`. The tests require failure
-and verify later cached reads remain usable; they do not repair that upstream
-handler state.
+Rasterio 1.5.2's Python read callback does not safely propagate arbitrary Python
+transport exceptions through native frames. A raster-only cursor records the
+first transport error and signals a short read to GDAL; immediately after the
+native operation, the reader raises the original Python error. No partial window
+is returned. Error state is scoped to the operation; a later read of already
+cached coherent data remains usable. Tests cover missing cached header/pixel bytes and changed
+remote identity, including a subsequent healthy reader. Ordinary file reads clip
+at EOF; the underlying exact-range transport still rejects invalid ranges.
 
 GRIT data retain their bundle's CC BY-NC 4.0 license, attribution, provenance and
 source caveats. Pourpoint's code license does not replace those terms.

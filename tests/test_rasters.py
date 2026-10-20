@@ -1,9 +1,10 @@
 """Independent native-grid examples, not producer certification."""
 
 import json
-from dataclasses import FrozenInstanceError
+from collections.abc import Mapping
+from dataclasses import FrozenInstanceError, dataclass
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import numpy as np
 import pytest
@@ -11,9 +12,11 @@ import rasterio
 from conftest import add_pair
 from rasterio.io import DatasetReader
 from rasterio.transform import from_origin
+from test_storage import OriginState, fingerprint
+from test_storage import origin as origin
 
 from pourpoint import Dataset
-from pourpoint.metadata import Manifest
+from pourpoint.metadata import Fingerprint, Manifest
 from pourpoint.rasters import RasterReader, normalize_direction
 from pourpoint.storage import Source
 
@@ -54,6 +57,7 @@ def test_native_window_precision_masks_and_lifetime(hfx: Path) -> None:
         with pytest.raises(FrozenInstanceError):
             request.col = 3
         result = dataset.rasters.read(request)
+        assert result.request is request
         np.testing.assert_array_equal(result.direction, [[1, 2, 0, 0], [3, 4, 5, 6]])
         np.testing.assert_array_equal(result.direction_valid, [[True, True, True, False], [True] * 4])
         np.testing.assert_array_equal(result.accumulation_valid, [[True] * 4, [False, True, True, True]])
@@ -310,3 +314,191 @@ def test_native_geographic_bounds_use_declared_angular_units(hfx: Path) -> None:
         request = data.rasters.prepare((0, 94, 1, 95), crs="EPSG:4807")
         assert (request.col, request.row, request.width, request.height) == (0, 1, 1, 1)
         np.testing.assert_array_equal(data.rasters.read(request).direction, [[3]])
+
+
+@pytest.fixture
+def external_origin(origin: tuple[str, OriginState], monkeypatch: pytest.MonkeyPatch) -> tuple[str, OriginState]:
+    url, state = origin
+    original = Source.external
+
+    def local_transport(source: Source, external_url: str) -> tuple[Source, str]:
+        return original(source, external_url.replace("https://", "http://", 1))
+
+    monkeypatch.setattr(Source, "external", local_transport)
+    return url, state
+
+
+@dataclass(frozen=True)
+class RasterManifestFixture:
+    artifacts: Mapping[str, Fingerprint]
+    declarations: Mapping[str, object]
+
+
+def external_manifest(root: Path, url: str) -> RasterManifestFixture:
+    raw = json.loads((root / "manifest.json").read_text())
+    external = {}
+    for role, name in raw["auxiliary"][-1]["artifacts"].items():
+        external[role] = {
+            "url": f"{url.replace('http://', 'https://')}/{name}",
+            **raw["artifacts"].pop(name),
+            "retention": "retained",
+        }
+        raw["auxiliary"][-1]["artifacts"][role] = {"external": role}
+    raw["external_artifacts"] = external
+    return RasterManifestFixture({k: Fingerprint.parse(v) for k, v in raw["artifacts"].items()}, raw)
+
+
+def test_external_native_pair(hfx: Path, external_origin: tuple[str, OriginState]) -> None:
+    add_pair(hfx)
+    url, state = external_origin
+    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    manifest = external_manifest(hfx, url)
+    with (
+        Source(url, storage_options={"client_options": {"allow_http": True}}) as source,
+        RasterReader(source, manifest) as reader,
+    ):
+        request = reader.prepare((0, 0, 4, 2))
+        window = reader.read(request)
+        assert request.grid.direction_sha256 == fingerprint(state["files"]["dir.tif"]).sha256
+        assert window.transform == from_origin(0, 2, 1, 1)
+        np.testing.assert_array_equal(window.direction, [[1, 2, 0, 0], [3, 4, 5, 6]])
+        assert window.accumulation[0, 0] == 16777217
+    assert state["requests"]
+    assert all(item[2:] == ('"v1"', "identity") for item in state["requests"])
+
+
+def test_external_raster_identity_rejected(hfx: Path, external_origin: tuple[str, OriginState]) -> None:
+    add_pair(hfx)
+    url, state = external_origin
+    manifest = external_manifest(hfx, url)
+    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    state["files"]["dir.tif"] = b"x" + state["files"]["dir.tif"][1:]
+    with (
+        Source(url, storage_options={"client_options": {"allow_http": True}}) as source,
+        RasterReader(source, manifest) as reader,
+        pytest.raises(ValueError, match="fingerprint|SHA|digest"),
+    ):
+        reader.prepare((0, 0, 4, 2))
+
+
+def test_external_raster_persistent_native_replay(
+    hfx: Path, external_origin: tuple[str, OriginState], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import obstore
+
+    add_pair(hfx)
+    url, state = external_origin
+    manifest = external_manifest(hfx, url)
+    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    cache_dir = hfx / "cache"
+    with (
+        Source(
+            url, storage_options={"client_options": {"allow_http": True}}, cache=True, cache_dir=cache_dir
+        ) as source,
+        RasterReader(source, manifest) as reader,
+    ):
+        first = reader.read(reader.prepare((0, 0, 4, 2)))
+
+    def no_network(*args: object, **kwargs: object) -> None:
+        raise AssertionError("offline replay must not use the network")
+
+    monkeypatch.setattr(obstore, "get", no_network)
+    monkeypatch.setattr(obstore, "head", no_network)
+    with (
+        Source(
+            url, storage_options={"client_options": {"allow_http": True}}, cache=True, cache_dir=cache_dir, offline=True
+        ) as source,
+        RasterReader(source, manifest) as reader,
+    ):
+        replay = reader.read(reader.prepare((0, 0, 4, 2)))
+        np.testing.assert_array_equal(replay.direction, first.direction)
+        np.testing.assert_array_equal(replay.accumulation, first.accumulation)
+        np.testing.assert_array_equal(replay.direction_valid, first.direction_valid)
+        np.testing.assert_array_equal(replay.accumulation_valid, first.accumulation_valid)
+        assert replay.transform == first.transform
+        assert replay.crs == first.crs
+
+
+@pytest.mark.parametrize("change", ["url", "retention"])
+def test_invalid_external_raster_declaration(hfx: Path, change: str) -> None:
+    add_pair(hfx)
+    manifest = external_manifest(hfx, "https://example.com")
+    raw = dict(manifest.declarations)
+    external = cast(dict[str, dict[str, object]], raw["external_artifacts"])
+    external["flow_dir"][change] = "http://example.com/dir.tif" if change == "url" else ""
+    with (
+        Source(hfx) as source,
+        RasterReader(source, manifest) as reader,
+        pytest.raises(ValueError, match="external raster"),
+    ):
+        reader.prepare((0, 0, 4, 2))
+
+
+def test_offline_missing_raster_pixels_fail_cleanly(hfx: Path) -> None:
+    shape = (512, 512)
+    add_pair(
+        hfx,
+        direction=np.full(shape, 8, dtype="uint8"),
+        accumulation=np.ones(shape, dtype="float32"),
+        transform=from_origin(0, 512, 1, 1),
+    )
+    manifest = Manifest.parse(json.loads((hfx / "manifest.json").read_text()))
+    with Source(hfx, cache=True, cache_dir=hfx / "cache") as source, RasterReader(source, manifest) as reader:
+        reader.prepare((100, 50, 101, 51))
+    with (
+        Source(hfx, cache=True, cache_dir=hfx / "cache", offline=True) as source,
+        RasterReader(source, manifest) as reader,
+    ):
+        request = reader.prepare((100, 50, 101, 51))
+        with pytest.raises(ValueError, match="offline cache missing bytes"):
+            reader.read(request)
+    # A failed native callback must not poison the next reader.
+    with Source(hfx) as source, RasterReader(source, manifest) as reader:
+        np.testing.assert_array_equal(reader.read(reader.prepare((100, 50, 101, 51))).direction, [[1]])
+
+
+def test_raster_transport_identity_error_during_pixels(hfx: Path, external_origin: tuple[str, OriginState]) -> None:
+    shape = (512, 512)
+    add_pair(
+        hfx,
+        direction=np.full(shape, 8, dtype="uint8"),
+        accumulation=np.ones(shape, dtype="float32"),
+        transform=from_origin(0, 512, 1, 1),
+    )
+    url, state = external_origin
+    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    manifest = external_manifest(hfx, url)
+    with (
+        Source(url, storage_options={"client_options": {"allow_http": True}}) as source,
+        RasterReader(source, manifest) as reader,
+    ):
+        request = reader.prepare((100, 50, 101, 51))
+        state["mode"] = "etag"
+        with pytest.raises(ValueError, match="ETag changed"):
+            reader.read(request)
+    state["mode"] = "good"
+    with (
+        Source(url, storage_options={"client_options": {"allow_http": True}}) as source,
+        RasterReader(source, manifest) as reader,
+    ):
+        np.testing.assert_array_equal(reader.read(reader.prepare((100, 50, 101, 51))).direction, [[1]])
+
+
+def test_missing_raster_header_bytes_fail_cleanly(hfx: Path) -> None:
+    import sqlite3
+
+    add_pair(hfx)
+    manifest = Manifest.parse(json.loads((hfx / "manifest.json").read_text()))
+    cache_dir = hfx / "cache"
+    with Source(hfx, cache=True, cache_dir=cache_dir) as source, RasterReader(source, manifest) as reader:
+        reader.read(reader.prepare((0, 0, 1, 1)))
+    with Source(hfx, cache=True, cache_dir=cache_dir, offline=True) as source:
+        # Validate identities first, then lose persisted header bytes before GDAL's cursor reads them.
+        for name in ("dir.tif", "acc.tif"):
+            source.open_artifact(name, manifest.artifacts[name], bounded=True)
+        with sqlite3.connect(cache_dir / source.identity / "ranges.sqlite3") as db:
+            db.execute("DELETE FROM ranges")
+        with RasterReader(source, manifest) as reader, pytest.raises(ValueError, match="offline cache missing bytes"):
+            reader.prepare((0, 0, 1, 1))
+    with Source(hfx) as source, RasterReader(source, manifest) as reader:
+        np.testing.assert_array_equal(reader.read(reader.prepare((0, 0, 1, 1))).direction, [[3]])

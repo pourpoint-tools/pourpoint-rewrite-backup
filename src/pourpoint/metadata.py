@@ -200,3 +200,88 @@ class Manifest:
             MappingProxyType(snaps),
             MappingProxyType(dict(data)),
         )
+
+
+@dataclass(frozen=True)
+class DomainFamily:
+    data: str
+    data_sha256: str
+    count: int
+    lookup: str
+    directory: str
+
+
+@dataclass(frozen=True)
+class SpatialManifest:
+    """Final HFX publication declarations; unknown source metadata stays inspectable."""
+
+    families: Mapping[str, DomainFamily]
+    relationships: Mapping[str, Mapping[str, object]]
+    artifacts: Mapping[str, Fingerprint]
+    declarations: Mapping[str, object]
+
+    @classmethod
+    def parse(cls, data: Mapping[str, object]) -> SpatialManifest:
+        if data.get("format_version") != "0.4.0":
+            raise ValueError("expected HFX 0.4.0")
+        if (
+            data.get("representation") != "spatial-geoparquet-adjacency"
+            or type(data.get("representation_version")) is not int
+            or data["representation_version"] != 1
+        ):
+            raise ValueError("expected spatial-geoparquet-adjacency representation version 1")
+        if data.get("crs") != "EPSG:4326":
+            raise ValueError("expected EPSG:4326 geometry CRS")
+        artifacts = {
+            artifact_path(k): Fingerprint.parse(v) for k, v in _mapping(data.get("artifacts"), "artifacts").items()
+        }
+
+        def path(value: object) -> str:
+            result = artifact_path(value)
+            if result not in artifacts:
+                raise ValueError(f"manifest fingerprint missing: {result}")
+            return result
+
+        families: dict[str, DomainFamily] = {}
+        for name, value in _mapping(data.get("families"), "families").items():
+            family = _mapping(value, f"family {name}")
+            feature = path(family.get("data"))
+            digest = _string(family, "data_sha256")
+            if digest != artifacts[feature].sha256:
+                raise ValueError(f"{name}: feature digest binding mismatch")
+            count = family.get("count")
+            if type(count) is not int or count < 0:
+                raise ValueError(f"{name}: count must be nonnegative")
+            families[name] = DomainFamily(
+                feature, digest, count, path(family.get("lookup")), path(family.get("directory"))
+            )
+        if not families:
+            raise ValueError("manifest families must not be empty")
+        relationships: dict[str, Mapping[str, object]] = {}
+        for name, value in _mapping(data.get("relationships"), "relationships").items():
+            relation = _mapping(value, f"relationships {name}")
+            if name not in families or relation.get("count") != families[name].count:
+                raise ValueError(f"{name}: relationship domain/count mismatch")
+            path(relation.get("data"))
+            path(relation.get("directory"))
+            bindings = _mapping(relation.get("feature_artifacts"), "feature_artifacts")
+            for domain, binding_value in bindings.items():
+                binding = _mapping(binding_value, "feature binding")
+                if (
+                    domain not in families
+                    or binding.get("data") != families[domain].data
+                    or binding.get("data_sha256") != families[domain].data_sha256
+                ):
+                    raise ValueError(f"{name}: relationship feature binding mismatch")
+            for column, column_value in _mapping(relation.get("columns"), "relationship columns").items():
+                declaration = _mapping(column_value, column)
+                target = declaration.get("target_domain")
+                if target not in families or target not in bindings or name not in bindings:
+                    raise ValueError(f"{name}.{column}: missing target domain binding")
+            relationships[name] = MappingProxyType(dict(relation))
+        return cls(
+            MappingProxyType(families),
+            MappingProxyType(relationships),
+            MappingProxyType(artifacts),
+            MappingProxyType(dict(data)),
+        )

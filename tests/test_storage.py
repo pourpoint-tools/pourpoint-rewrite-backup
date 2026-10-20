@@ -370,3 +370,142 @@ def test_independent_cursors_accounting_and_close(tmp_path: Path) -> None:
             assert second.tell() == 0
             assert source.buffer_bytes >= 65536
         assert source.buffer_bytes == 0
+
+
+def test_persistent_overlap_and_offline_snapshot(
+    origin: tuple[str, OriginState], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import obstore
+
+    url, state = origin
+    data = state["data"]
+    mark = fingerprint(data)
+    state["files"] = {"file": data, "manifest.json": b'{"snapshot": 1}'}
+    options = {"client_options": {"allow_http": True}}
+    with Source(url, storage_options=options, cache=True, cache_dir=tmp_path) as source:
+        assert source.read_json("manifest.json") == {"snapshot": 1}
+        assert source.read_ranges("file", mark, [(100, 200)]) == [data[100:200]]
+        before = source.stats.transferred_bytes
+        assert source.read_ranges("file", mark, [(150, 250)]) == [data[150:250]]
+        assert source.stats.transferred_bytes - before == 50
+        assert source.stats.cache_hit_bytes == 50
+
+    def no_network(*args: object, **kwargs: object) -> None:
+        raise AssertionError("network used")
+
+    monkeypatch.setattr(obstore, "head", no_network)
+    monkeypatch.setattr(obstore, "get", no_network)
+    with Source(url, storage_options=options, cache=True, cache_dir=tmp_path, offline=True) as source:
+        assert source.read_json("manifest.json") == {"snapshot": 1}
+        assert source.read_ranges("file", mark, [(100, 250)]) == [data[100:250]]
+        assert source.stats.requests == 0
+        with pytest.raises(ValueError, match="offline.*missing"):
+            source.read_ranges("file", mark, [(250, 300)])
+
+
+def test_cache_snapshot_and_artifact_identity(origin: tuple[str, OriginState], tmp_path: Path) -> None:
+    url, state = origin
+    original = b'{"snapshot": 1}'
+    state["files"] = {"manifest.json": original, "file": b"first"}
+    options = {"client_options": {"allow_http": True}, "retry_config": {"max_retries": 0}}
+    with Source(url, storage_options=options, cache=True, cache_dir=tmp_path) as source:
+        assert source.read_json("manifest.json") == {"snapshot": 1}
+        assert source.read_ranges("file", fingerprint(b"first"), [(0, 5)]) == [b"first"]
+    state["files"] = {"manifest.json": b'{"snapshot": 2}', "file": b"other"}
+    with Source(url, storage_options=options, cache=True, cache_dir=tmp_path) as source:
+        assert source.read_json("manifest.json") == {"snapshot": 1}
+        assert source.read_ranges("file", fingerprint(b"other"), [(0, 5)]) == [b"other"]
+    with Source(url, storage_options=options, cache=True, cache_dir=tmp_path, offline=True) as source:
+        assert source.read_ranges("file", fingerprint(b"first"), [(0, 5)]) == [b"first"]
+
+
+def test_concurrent_ranges_preserve_checks(origin: tuple[str, OriginState], tmp_path: Path) -> None:
+    url, state = origin
+    data = state["data"]
+    options = {"client_options": {"allow_http": True}, "retry_config": {"max_retries": 0}}
+    with Source(url, storage_options=options, cache=True, cache_dir=tmp_path) as source:
+        ranges = [(100, 150), (10000, 10040), (50000, 50100)]
+        assert source.read_ranges("file", fingerprint(data), ranges, max_workers=2) == [data[a:b] for a, b in ranges]
+        assert source.stats.requests == 4
+        assert source.stats.transferred_bytes == 190
+        state["mode"] = "etag"
+        with pytest.raises(ValueError, match="ETag"):
+            source.read_ranges("file", fingerprint(data), [(60000, 60100)])
+    with (
+        Source(url, storage_options=options, cache=True, cache_dir=tmp_path, offline=True) as source,
+        pytest.raises(ValueError, match="offline.*missing"),
+    ):
+        source.read_ranges("file", fingerprint(data), [(60000, 60100)])
+
+
+def test_prefetch_projects_parquet_chunks(origin: tuple[str, OriginState], tmp_path: Path) -> None:
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    url, state = origin
+    sink = pa.BufferOutputStream()
+    table = pa.table({"id": list(range(100000)), "payload": [bytes([i % 256]) * 100 for i in range(100000)]})
+    pq.write_table(table, sink, compression=None, use_dictionary=False)
+    state["data"] = sink.getvalue().to_pybytes()
+    mark = fingerprint(state["data"])
+    with Source(
+        url, storage_options={"client_options": {"allow_http": True}}, cache=True, cache_dir=tmp_path
+    ) as source:
+        reader = source.parquet("file", mark)
+        source.prefetch_parquet("file", mark, 0, ["id"])
+        before = source.stats.transferred_bytes
+        assert reader.read_row_group(0, columns=["id"]).equals(table.select(["id"]))
+        assert source.stats.transferred_bytes == before
+        assert before < len(state["data"]) // 4
+
+
+def test_cached_interior_corruption_rejected(origin: tuple[str, OriginState], tmp_path: Path) -> None:
+    import sqlite3
+
+    url, state = origin
+    mark = fingerprint(state["data"])
+    options = {"client_options": {"allow_http": True}}
+    with Source(url, storage_options=options, cache=True, cache_dir=tmp_path) as source:
+        source.read_ranges("file", mark, [(100000, 100100)])
+    database = next(tmp_path.rglob("ranges.sqlite3"))
+    with sqlite3.connect(database) as connection:
+        connection.execute("UPDATE ranges SET data = ?", (b"x" * 100,))
+    with (
+        Source(url, storage_options=options, cache=True, cache_dir=tmp_path, offline=True) as source,
+        pytest.raises(ValueError, match="cached range SHA-256"),
+    ):
+        source.read_ranges("file", mark, [(100020, 100030)])
+
+
+def test_concurrent_overlapping_batch_reuses_bytes(origin: tuple[str, OriginState], tmp_path: Path) -> None:
+    url, state = origin
+    data = state["data"]
+    with Source(
+        url, storage_options={"client_options": {"allow_http": True}}, cache=True, cache_dir=tmp_path
+    ) as source:
+        ranges = [(100, 200), (150, 250), (100, 200)]
+        assert source.read_ranges("file", fingerprint(data), ranges) == [data[a:b] for a, b in ranges]
+        assert source.stats.transferred_bytes == 150
+
+
+def test_cached_cursor_reads_at_eof(tmp_path: Path) -> None:
+    data = b"original artifact"
+    (tmp_path / "file").write_bytes(data)
+    with Source(tmp_path, cache=True, cache_dir=tmp_path / "cache") as source:
+        stream = source.open_artifact("file", fingerprint(data))
+        stream.seek(len(data) - 3)
+        assert stream.read(1000) == data[-3:]
+        assert stream.read(1000) == b""
+        stream.seek(1000)
+        assert stream.read(1000) == b""
+
+
+def test_external_cross_origin_does_not_forward_credentials(tmp_path: Path) -> None:
+    with Source(
+        "https://dataset.example/root",
+        storage_options={"client_options": {"default_headers": {"Authorization": "secret"}}},
+    ) as source:
+        same, _ = source.external("https://dataset.example/other/file")
+        other, _ = source.external("https://raster.example/file")
+        assert same._storage_options == source._storage_options
+        assert other._storage_options == {}

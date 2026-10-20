@@ -10,10 +10,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 import tempfile
 from collections.abc import Mapping
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from threading import Lock
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, BinaryIO, cast
 from urllib.parse import unquote, urlsplit
@@ -25,7 +28,26 @@ from fsspec.caching import ReadAheadCache
 from fsspec.spec import AbstractBufferedFile
 from obstore.store import HTTPStore, LocalStore, ObjectStore, S3Store
 
+from pourpoint.cache import RangeCache
 from pourpoint.metadata import Fingerprint, artifact_path
+
+
+@dataclass
+class TransferStats:
+    """Source transport calls (including HEAD), payload bytes and disk-cache hits."""
+
+    requests: int = 0
+    transferred_bytes: int = 0
+    cache_hit_bytes: int = 0
+
+
+def default_cache_dir() -> Path:
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Caches" / "pourpoint"
+    if os.name == "nt":
+        return Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "pourpoint"
+    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "pourpoint"
+
 
 if TYPE_CHECKING:
     from obstore import GetOptions, GetResult
@@ -45,7 +67,14 @@ class _ArtifactFile(AbstractBufferedFile):
     def __init__(self, source: Source, path: str, identity: _Identity) -> None:
         self.source = source
         self.identity = identity
-        super().__init__(None, path, mode="rb", size=identity.size, block_size=65536, cache_type="readahead")
+        super().__init__(
+            None,
+            path,
+            mode="rb",
+            size=identity.size,
+            block_size=65536,
+            cache_type="none" if source.cache else "readahead",
+        )
 
     # GDAL tracks opener cursors by identity, not fsspec filesystem metadata.
     __hash__ = object.__hash__
@@ -54,6 +83,9 @@ class _ArtifactFile(AbstractBufferedFile):
         return self is other
 
     def _fetch_range(self, start: int, end: int) -> bytes:
+        end = min(end, self.identity.size)
+        if start >= end:
+            return b""
         return self.source._range(self.path, self.identity, start, end)
 
 
@@ -66,9 +98,28 @@ class Source:
     Local files are checked using inode, device, size and nanosecond modification time.
     """
 
-    def __init__(self, root: str | Path, *, storage_options: Mapping[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        storage_options: Mapping[str, Any] | None = None,
+        cache_dir: str | Path | None = None,
+        cache: bool = False,
+        offline: bool = False,
+    ) -> None:
+        if offline and not cache:
+            raise ValueError("offline access requires cache=True")
+        self.cache_dir = Path(cache_dir) if cache_dir is not None else default_cache_dir()
+        self.cache = cache
+        self.offline = offline
+        self.stats = TransferStats()
+        self.range_workers = 4
+        self._stats_lock = Lock()
+        self._storage_options = dict(storage_options or {})
+        self._children: dict[str, Source] = {}
         options = dict(storage_options or {})
         parsed = urlsplit(str(root))
+        self._origin = parsed.scheme, parsed.netloc
         self._local_root: Path | None = None
         self._closed = False
         self._files: dict[str, _ArtifactFile] = {}
@@ -122,6 +173,60 @@ class Source:
             else:
                 raise ValueError("dataset root must be local, HTTP(S), or s3://")
         self.identity = hashlib.sha256(json.dumps(location, sort_keys=True).encode()).hexdigest()
+        self._cache = RangeCache(self.cache_dir, self.identity) if cache else None
+
+    def external(self, url: str) -> tuple[Source, str]:
+        """Share lifecycle/cache/counters; cross-origin external access is anonymous.
+
+        Transport options, including credentials, are forwarded only to the same
+        scheme and authority. External private hosts require separate configuration.
+        """
+        root, path = url.rsplit("/", 1)
+        parsed = urlsplit(url)
+        options = self._storage_options if (parsed.scheme, parsed.netloc) == self._origin else {}
+        if root not in self._children:
+            child = Source(
+                root,
+                storage_options=options,
+                cache_dir=self.cache_dir,
+                cache=self.cache,
+                offline=self.offline,
+            )
+            child.stats = self.stats
+            child._stats_lock = self._stats_lock
+            self._children[root] = child
+        return self._children[root], path
+
+    def _cache_key(self, path: str) -> str:
+        fingerprint = self._fingerprints.get(path)
+        return json.dumps([path, asdict(fingerprint) if fingerprint else None], sort_keys=True)
+
+    def read_ranges(
+        self, path: str, fingerprint: Fingerprint, ranges: list[tuple[int, int]], *, max_workers: int = 4
+    ) -> list[bytes]:
+        """Acquire exact ranges concurrently without sharing mutable file cursors.
+
+        At most max_workers transfers run at once; returned bytes occupy the sum
+        of requested lengths. This is explicit batch acquisition, not unbounded prefetch.
+        """
+        self.open_artifact(path, fingerprint)
+        identity = self._files[path].identity
+        merged: list[tuple[int, int]] = []
+        for start, end in sorted(ranges):
+            if not 0 <= start < end <= identity.size:
+                raise ValueError("artifact range out of bounds")
+            if merged and start < merged[-1][1]:
+                merged[-1] = merged[-1][0], max(end, merged[-1][1])
+            else:
+                merged.append((start, end))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            acquired = list(executor.map(lambda bounds: self._range(path, identity, *bounds), merged))
+        return [
+            data[start - left : end - left]
+            for start, end in ranges
+            for (left, right), data in zip(merged, acquired, strict=True)
+            if left <= start and end <= right
+        ]
 
     def _path(self, relative: str) -> str:
         if self._closed:
@@ -144,6 +249,8 @@ class Source:
         if self._local_root is not None:
             stat = self._stat(path)
             return _Identity(stat[2], None, None, stat)
+        with self._stats_lock:
+            self.stats.requests += 1
         meta = obstore.head(self._store, path)
         etag, version = meta["e_tag"], meta["version"]
         if not version and (not etag or etag.startswith("W/")):
@@ -154,6 +261,34 @@ class Source:
         self._path(path)
         if not 0 <= start < end <= identity.size:
             raise ValueError("artifact range out of bounds")
+        if not self.offline and identity.local_stat is not None and self._stat(path) != identity.local_stat:
+            raise ValueError(f"{path}: artifact changed")
+        if self._cache is None:
+            return self._fetch_range(path, identity, start, end)
+        key = self._cache_key(path)
+        pieces = self._cache.pieces(key, start, end)
+        output = bytearray()
+        position = start
+        for offset, data in pieces:
+            if position >= end:
+                break
+            if offset > position:
+                stop = min(offset, end)
+                output.extend(self._fetch_range(path, identity, position, stop))
+                position = stop
+            stop = min(offset + len(data), end)
+            if stop > position:
+                output.extend(data[position - offset : stop - offset])
+                with self._stats_lock:
+                    self.stats.cache_hit_bytes += stop - position
+                position = stop
+        if position < end:
+            output.extend(self._fetch_range(path, identity, position, end))
+        return bytes(output)
+
+    def _fetch_range(self, path: str, identity: _Identity, start: int, end: int) -> bytes:
+        if self.offline:
+            raise ValueError(f"offline cache missing bytes for {path} [{start}, {end})")
         options: GetOptions = {"range": (start, end)}
         if identity.version:
             options["version"] = identity.version
@@ -161,6 +296,8 @@ class Source:
             options["if_match"] = identity.etag
         if identity.local_stat is not None and self._stat(path) != identity.local_stat:
             raise ValueError(f"{path}: artifact changed")
+        with self._stats_lock:
+            self.stats.requests += 1
         # object_store checks 206 and Content-Range for remote range requests.
         result = obstore.get(self._store, path, options=options)
         self._check_response(path, identity, result)
@@ -171,6 +308,10 @@ class Source:
             raise ValueError(f"{path}: incomplete or oversized range response")
         if identity.local_stat is not None and self._stat(path) != identity.local_stat:
             raise ValueError(f"{path}: artifact changed")
+        with self._stats_lock:
+            self.stats.transferred_bytes += len(data)
+        if self._cache is not None:
+            self._cache.put(self._cache_key(path), start, data)
         return data
 
     @staticmethod
@@ -191,7 +332,24 @@ class Source:
         if path in self._fingerprints and self._fingerprints[path] != fingerprint:
             raise ValueError(f"{path}: inconsistent artifact fingerprint")
         if path not in self._files:
-            identity = self._identity(path)
+            self._fingerprints[path] = fingerprint
+            key = "identity:" + self._cache_key(path)
+            saved = self._cache.metadata(key) if self._cache else None
+            if saved is not None:
+                value = json.loads(saved)
+                if value["local_stat"] is not None:
+                    value["local_stat"] = tuple(value["local_stat"])
+                identity = _Identity(**value)
+            else:
+                if self.offline:
+                    raise ValueError(f"offline cache missing identity for {path}")
+                identity = self._identity(path)
+                if self._cache:
+                    saved = self._cache.pin(key, json.dumps(asdict(identity)).encode())
+                    value = json.loads(saved)
+                    if value["local_stat"] is not None:
+                        value["local_stat"] = tuple(value["local_stat"])
+                    identity = _Identity(**value)
             if identity.size != fingerprint.size_bytes:
                 raise ValueError(f"{path}: artifact size mismatch")
             self._files[path] = _ArtifactFile(self, path, identity)
@@ -227,7 +385,7 @@ class Source:
         """
         self._path(path)
         identity = self._files[path].identity
-        if identity.local_stat is not None and self._stat(path) != identity.local_stat:
+        if not self.offline and identity.local_stat is not None and self._stat(path) != identity.local_stat:
             raise ValueError(f"{path}: artifact changed")
 
     def read_json(self, path: str, fingerprint: Fingerprint | None = None) -> dict[str, object]:
@@ -238,8 +396,19 @@ class Source:
                 raise ValueError(f"{path}: inconsistent artifact fingerprint")
             return dict(value)
         if fingerprint is None:
-            identity = self._identity(path)
-            data = self._range(path, identity, 0, identity.size)
+            snapshot = self._cache.metadata("json:" + path) if self._cache else None
+            if snapshot is not None:
+                data = snapshot
+            else:
+                if self.offline:
+                    raise ValueError(f"offline cache missing JSON snapshot for {path}")
+                identity = self._identity(path)
+                data = self._fetch_range(path, identity, 0, identity.size)
+                value = json.loads(data)
+                if not isinstance(value, dict):
+                    raise ValueError(f"{path}: expected JSON object")
+                if self._cache:
+                    data = self._cache.pin("json:" + path, data)
         else:
             stream = self.open_artifact(path, fingerprint)
             data = stream.read()
@@ -259,6 +428,45 @@ class Source:
         elif self._fingerprints[path] != fingerprint:
             raise ValueError(f"{path}: inconsistent artifact fingerprint")
         return self._parquet[path]
+
+    def prefetch_parquet(
+        self,
+        path: str,
+        fingerprint: Fingerprint,
+        group: int,
+        columns: list[str] | None = None,
+    ) -> None:
+        """Cache projected column chunks with bounded concurrent exact transfers.
+
+        Runs only with persistent caching. Each transfer is at most 8 MiB, with
+        at most range_workers payloads alive; no whole-world scheduling or output
+        list. This bounds transfer buffers, not Parquet decompression or RSS.
+        """
+        if not self.cache or self.offline:
+            return
+        reader = self.parquet(path, fingerprint)
+        metadata = reader.metadata.row_group(group)
+        ranges: list[tuple[int, int]] = []
+        for index in range(metadata.num_columns):
+            chunk = metadata.column(index)
+            if columns is not None and not any(
+                chunk.path_in_schema == name or chunk.path_in_schema.startswith(name + ".") for name in columns
+            ):
+                continue
+            start = chunk.data_page_offset
+            if chunk.has_dictionary_page:
+                start = min(start, chunk.dictionary_page_offset)
+            end = start + chunk.total_compressed_size
+            for offset in range(start, end, 8 * 1024 * 1024):
+                ranges.append((offset, min(offset + 8 * 1024 * 1024, end)))
+        identity = self._files[path].identity
+
+        def acquire(bounds: tuple[int, int]) -> None:
+            self._range(path, identity, *bounds)
+
+        with ThreadPoolExecutor(max_workers=self.range_workers) as executor:
+            for offset in range(0, len(ranges), self.range_workers):
+                list(executor.map(acquire, ranges[offset : offset + self.range_workers]))
 
     def graph_path(self, cache_dir: str | Path, path: str, fingerprint: Fingerprint) -> Path:
         """Verify/reuse an original graph; publish completed downloads atomically.
@@ -282,11 +490,15 @@ class Source:
                 pass
         self.open_artifact(path, fingerprint)
         identity = self._files[path].identity
+        if self.offline:
+            raise ValueError(f"offline cache missing original graph {path}")
         options: GetOptions = {}
         if identity.etag:
             options["if_match"] = identity.etag
         if identity.version:
             options["version"] = identity.version
+        with self._stats_lock:
+            self.stats.requests += 1
         result = obstore.get(self._store, path, options=options)
         self._check_response(path, identity, result)
         if result.range != (0, identity.size):
@@ -299,6 +511,8 @@ class Source:
                 # obstore streams bounded transfer chunks, not one huge allocation.
                 for chunk in result.stream():
                     output.write(chunk)
+                    with self._stats_lock:
+                        self.stats.transferred_bytes += len(chunk)
                 output.flush()
                 os.fsync(output.fileno())
             identity = self._verify_file(temporary, fingerprint)
@@ -352,10 +566,10 @@ class Source:
         This counts serialized response buffers, not total process memory. Parquet
         pre-buffering and decoded Arrow batches have separate ownership/accounting.
         """
-        return sum(
-            len(cast(ReadAheadCache, stream.cache).cache)
+        return sum(child.buffer_bytes for child in self._children.values()) + sum(
+            len(stream.cache.cache)
             for stream in (*self._files.values(), *self._independent_files)
-            if not stream.closed and stream.cache is not None
+            if not stream.closed and isinstance(stream.cache, ReadAheadCache)
         )
 
     def close(self) -> None:
@@ -371,6 +585,10 @@ class Source:
             self._parquet.clear()
             self._files.clear()
             self._json.clear()
+            for child in self._children.values():
+                child.close()
+            if self._cache:
+                self._cache.close()
 
     def __enter__(self) -> Source:
         if self._closed:

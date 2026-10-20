@@ -2,21 +2,18 @@
 
 Private workspace for a fresh Python rewrite of pourpoint, a watershed
 delineation engine consuming [HFX](https://github.com/CooperBigFoot/hfx)
-datasets. The HFX 0.4.0 reader and runtime foundation are available. Complete
-delineation and the public `Engine` API are not implemented.
+datasets. The final HFX 0.4.0 spatial reader and runtime foundation are available.
+Complete delineation and export workflows are not implemented.
 
 ## Reader and runtime
 
 ```python
-from pourpoint import Dataset
+from pourpoint import HydroFabric
 
-with Dataset.open(
-    "https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/", cache_dir="/path/to/graph-cache"
-) as dataset:
-    selected = dataset.upstream(22333245)
-    records = dataset.records(selected)  # attributes + exact WKB; one grouped access
-    attributes = records.table.drop(["geometry"])
-    terminal = dataset.polygons([22333245]).decode()
+with HydroFabric("https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/", cache_dir="./hfx-cache") as fabric:
+    ids = fabric.traverse("catchments", [1284709])
+    subbasins = fabric.subbasins(ids)
+    attributes = fabric.records("rivers", [1], columns=["id", "source_strahler_order"])
 ```
 
 See [runtime access](docs/runtime.md) for costs, candidate APIs, integrity and lifetime.
@@ -31,7 +28,7 @@ Use Python 3.13 and [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv sync
-uv run pytest
+uv run python -m pytest
 uv run ruff format --check
 uv run ruff check
 uv run ty check src
@@ -58,7 +55,7 @@ git show 60e3d6e383546ea6ed20e68fe4d77959c816a48c:crates/core/src/engine.rs
 ```
 
 The canonical input contract is the
-[HFX 0.4.0 vector contract](https://github.com/pourpoint-tools/hfx/blob/bb7ea1ddb0c83e2a38968450e7163a921d5e3a4f/docs/v0.4.0/vector-data.md),
+[HFX 0.4.0 vector contract](https://github.com/pourpoint-tools/hfx/blob/main/docs/v0.4.0/vector-data.md),
 also available locally at `../hfx/docs/v0.4.0/vector-data.md` when using sibling checkouts.
 
 ## License
