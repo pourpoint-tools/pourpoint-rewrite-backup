@@ -23,7 +23,9 @@ Types below are conceptual:
 - `RiverNetwork`: individual river features and their directed relationships, with source nodes where available. `.geometry` exposes their linework for geometric operations without replacing the feature/relationship representation.
 - `Geometry`, `Point`, raster types and result fields describe roles, not finalized classes or dependencies.
 
-No dedicated `SubbasinSelection` wrapper. Exact attribute access, dataclasses versus other representations, per-feature objects versus columnar storage, ownership and lifetime remain reader/runtime decisions. Do not allocate elaborate classes merely to match these sketches.
+No dedicated `SubbasinSelection` wrapper. Supplied nonstandard attributes on sub-basins and individual river features use `.attributes["field_name"]`, preserving typed values and nulls. Dataclasses versus other representations and per-feature objects versus columnar storage remain implementation choices. Do not allocate elaborate classes merely to match these sketches.
+
+The subsequent [reader/runtime vision](2026-10-20-hfx-reader-and-runtime-redesign.md) settles one context-managed lifecycle: `with HydroFabric(source, cache_dir=...) as fabric:`. Perform source-dependent operations, including raster-backed export, inside the context. Materialized vector results and persistent cached data survive closure. It also supersedes the original explicit-raster-input requirement below with fabric-backed refinement.
 
 ## Explicit operations
 
@@ -73,26 +75,24 @@ The number is illustrative, not a default. `onto` need not come from HFX: the us
 
 ### Refinement: whole-footprint raster delineation
 
-Refinement is an explicit, computationally expensive alternative to whole-unit delineation. Pass flow direction and accumulation explicitly, not hidden behind `HydroFabric`.
+Refinement is an explicit, computationally expensive alternative to whole-unit delineation. Pass `HydroFabric`; the backend resolves its declared direction/accumulation pair and reads needed native-grid windows. This reader/runtime decision supersedes the original requirement to pass both raster inputs separately. Missing rasters or inadequate coverage fail clearly; a custom raster override is not required.
 
 ```python
 @overload
 def refine(
+    fabric: HydroFabric,
     subbasins: Sequence[Subbasin],
     *,
     target: Point,
-    flow_direction: DirectionRaster,
-    flow_accumulation: AccumulationRaster,
     window_size: int,
 ) -> list[SubbasinContribution]: ...
 
 @overload
 def refine(
+    fabric: HydroFabric,
     footprint: Polygon | MultiPolygon,
     *,
     target: Point,
-    flow_direction: DirectionRaster,
-    flow_accumulation: AccumulationRaster,
     window_size: int,
 ) -> Polygon | MultiPolygon: ...
 ```
@@ -132,7 +132,7 @@ More explicitly, let G_M be cells admitted by the footprint mask, c_out the sele
 
 This replaces historical terminal-only refinement, which could retain units entering below the requested point. Refinement may exclude whole selected units or return partial contributions; do not assume stronger source-construction properties without evidence. Raster/vector network consistency is an input assumption, not a guarantee that every vector-intersected pixel is a drainage cell.
 
-A possible utility to check vector/raster equality is recorded on [#36](https://github.com/pourpoint-tools/pourpoint/issues/36#issuecomment-6276325999). It is a design reminder, not committed implementation scope or authorization for a validator framework.
+The optional utility to check this assumption for user-selected cases is deferred to [#38](https://github.com/pourpoint-tools/pourpoint/issues/38). It is not a mandatory refinement gate, worldwide audit or validator framework.
 
 [Lindsay, Rothwell & Davies (2008)](https://doi.org/10.1029/2007WR006507), sections 3–5, compares maximum accumulation, nearest threshold-qualified cells and AORA. Maximum accumulation is established practice but can move outlets across confluences; AORA still requires thresholds and station metadata. This vision adopts one known local rule, not a claim of universal scientific optimality. See [full-paper discussion](https://github.com/pourpoint-tools/pourpoint/issues/35#issuecomment-6277313122).
 
@@ -188,8 +188,6 @@ result = delineate(
     snap_onto=network.geometry,
     refine=True,
     merge=True,
-    flow_direction=direction,
-    flow_accumulation=accumulation,
     # Snap radius and raster-window options will be explicit;
     # their wrapper names/defaults remain to be specified.
 )
@@ -236,6 +234,6 @@ River export preserves individual features, supplied typed attributes/nulls and 
 
 For this documentation-only outcome, success is this coherent, published API anchor linked from #35 and available to #36. It describes the intended behavior without pretending the readers, types or functions exist. It does not revise the Program map or implement river workflow #34 independently.
 
-Subsequent design should resolve concrete representation and lifetime, signatures/defaults, error details, accumulation-cell ties/window conventions, batch corner cases, export encoding and project styling against this intent. These are not an invitation to reopen functional composition, public/private cell selection, whole-footprint refinement, HFX authority, or ordinary collection results. Material changes require discussion rather than silent compatibility machinery.
+Subsequent design should resolve concrete representation within the reader/runtime vision’s lifetime contract, signatures/defaults, error details, accumulation-cell ties/window conventions, batch corner cases, export encoding and project styling against this intent. These are not an invitation to reopen functional composition, public/private cell selection, whole-footprint refinement, HFX authority, or ordinary collection results. Material changes require discussion rather than silent compatibility machinery.
 
 Implementation, tests of future engine behavior, source normalization, new ranking formulas, alternative refinement algorithms, routing/impact simulation, and automatic adoption of the possible equality checker are excluded from this publication.
