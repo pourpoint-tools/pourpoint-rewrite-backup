@@ -7,13 +7,15 @@ Only the separate validity mask determines nodata; its direction payload is zero
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
+from io import IOBase
 from math import ceil, floor, isfinite
 from threading import Lock, get_ident
 from types import TracebackType
-from typing import BinaryIO, Literal, Self, cast
+from typing import BinaryIO, Literal, Protocol, Self, cast
+from urllib.parse import urlsplit
 
 import numpy as np
 import numpy.typing as npt
@@ -25,7 +27,7 @@ from rasterio.crs import CRS  # ty: ignore[unresolved-import]  # Cython module w
 from rasterio.io import DatasetReader
 from rasterio.windows import Window
 
-from pourpoint.metadata import Auxiliary, Bounds, Manifest, bounds
+from pourpoint.metadata import Bounds, Fingerprint, artifact_path, bounds
 from pourpoint.storage import Source
 
 
@@ -103,19 +105,34 @@ class RasterWindow:
     transform: Affine
     crs: CRS
     accumulation_units: Literal["cells", "km2"]
+    request: RasterRequest
+
+
+class RasterManifest(Protocol):
+    @property
+    def artifacts(self) -> Mapping[str, Fingerprint]: ...
+
+    @property
+    def declarations(self) -> Mapping[str, object]: ...
+
+
+type _Reference = str | Mapping[str, str]
 
 
 @dataclass(frozen=True)
 class _Declaration:
-    direction: str
-    accumulation: str
+    direction: _Reference
+    accumulation: _Reference
     crs: CRS
     encoding: Literal["esri", "taudem", "grass"]
     units: Literal["cells", "km2"]
 
     @classmethod
-    def parse(cls, entry: Auxiliary) -> Self:
-        data = entry.metadata
+    def parse(cls, entry: Mapping[str, object]) -> Self:
+        data = entry.get("metadata")
+        artifacts = entry.get("artifacts")
+        if not isinstance(data, dict) or not isinstance(artifacts, dict):
+            raise ValueError("invalid D8 raster declaration")
         crs = data.get("crs")
         encoding, units = data.get("flow_dir_encoding"), data.get("flow_acc_units")
         if (
@@ -124,12 +141,21 @@ class _Declaration:
             or re.fullmatch(r"EPSG:[1-9][0-9]*", crs) is None
             or encoding not in ("esri", "taudem", "grass")
             or units not in ("cells", "km2")
-            or set(entry.artifacts) != {"flow_dir", "flow_acc"}
+            or set(artifacts) != {"flow_dir", "flow_acc"}
         ):
             raise ValueError("invalid D8 raster declaration")
+        for reference in artifacts.values():
+            if isinstance(reference, str):
+                artifact_path(reference)
+            elif not (
+                isinstance(reference, dict)
+                and set(reference) == {"external"}
+                and isinstance(reference["external"], str)
+            ):
+                raise ValueError("invalid D8 raster artifact reference")
         return cls(
-            entry.artifacts["flow_dir"],
-            entry.artifacts["flow_acc"],
+            artifacts["flow_dir"],
+            artifacts["flow_acc"],
             CRS.from_string(crs),
             cast(Literal["esri", "taudem", "grass"], encoding),
             cast(Literal["cells", "km2"], units),
@@ -143,6 +169,33 @@ class _Pair:
     grid: RasterGrid
 
 
+class _RasterCursor(IOBase):
+    """Keep Python transport exceptions out of GDAL's C callback frames."""
+
+    def __init__(self, stream: BinaryIO, errors: list[Exception]) -> None:
+        self._stream = stream
+        self._errors = errors
+
+    def read(self, size: int = -1) -> bytes:
+        if self._errors:
+            return b""
+        try:
+            return self._stream.read(size)
+        except Exception as error:
+            self._errors.append(error)
+            return b""
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        return self._stream.seek(offset, whence)
+
+    def tell(self) -> int:
+        return self._stream.tell()
+
+    def close(self) -> None:
+        self._stream.close()
+        super().close()
+
+
 class RasterReader:
     """Reusable synchronous pairs belonging to one Source and manifest snapshot.
 
@@ -152,13 +205,18 @@ class RasterReader:
     close releases handles, not necessarily process-wide cache allocations.
     """
 
-    def __init__(self, source: Source, manifest: Manifest) -> None:
+    def __init__(self, source: Source, manifest: RasterManifest) -> None:
         self._source = source
         self._manifest = manifest
+        entries = manifest.declarations.get("auxiliary", [])
+        if not isinstance(entries, (list, tuple)):
+            raise ValueError("invalid raster auxiliary declarations")
         self._declarations = tuple(
-            _Declaration.parse(e) for e in manifest.auxiliary if e.schema == "hfx.aux.d8_raster.v2"
+            _Declaration.parse(e) for e in entries if isinstance(e, dict) and e.get("schema") == "hfx.aux.d8_raster.v2"
         )
+        self._bands: dict[str, tuple[Source, str, Fingerprint]] = {}
         self._pairs: dict[int, _Pair] = {}
+        self._io_errors: list[Exception] = []
         self._resources = ExitStack()
         self._identity = object()
         self._thread = get_ident()
@@ -174,10 +232,45 @@ class RasterReader:
         if not self._lock.acquire(blocking=False):
             raise RuntimeError("raster reader already has an active call")
         try:
+            self._io_errors.clear()
             with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR"):
                 yield
         finally:
             self._lock.release()
+
+    def _band(self, reference: _Reference) -> tuple[Source, str, Fingerprint]:
+        key = reference if isinstance(reference, str) else "external:" + reference["external"]
+        if key not in self._bands:
+            if isinstance(reference, str):
+                result = self._source, reference, self._manifest.artifacts[reference]
+            else:
+                external = self._manifest.declarations.get("external_artifacts")
+                entry = external.get(reference["external"]) if isinstance(external, dict) else None
+                if not isinstance(entry, dict) or not isinstance(entry.get("url"), str):
+                    raise ValueError("missing external raster identity")
+                url = urlsplit(entry["url"])
+                retention = entry.get("retention")
+                if (
+                    url.scheme != "https"
+                    or not url.netloc
+                    or not url.path.rsplit("/", 1)[-1]
+                    or url.query
+                    or url.fragment
+                    or url.username
+                    or url.password
+                    or not isinstance(retention, str)
+                    or not retention.strip()
+                ):
+                    raise ValueError("invalid external raster URL or retention")
+                fingerprint = Fingerprint.parse(entry)
+                source, path = self._source.external(entry["url"])
+                result = source, path, fingerprint
+            self._bands[key] = result
+        return self._bands[key]
+
+    def _check(self, reference: _Reference) -> None:
+        source, path, _ = self._band(reference)
+        source.check_artifact(path)
 
     def _open(self, index: int) -> _Pair:
         if index in self._pairs:
@@ -185,20 +278,23 @@ class RasterReader:
         declaration = self._declarations[index]
         with ExitStack() as resources:
 
-            def open_band(path: str) -> DatasetReader:
-                fingerprint = self._manifest.artifacts[path]
-                self._source.open_artifact(path, fingerprint, bounded=True)
-                self._source.check_artifact(path)
+            def open_band(reference: _Reference) -> DatasetReader:
+                source, path, fingerprint = self._band(reference)
+                source.open_artifact(path, fingerprint, bounded=True)
+                source.check_artifact(path)
 
                 def opener(name: str, mode: str = "rb") -> BinaryIO:
                     if name != path or mode not in ("r", "rb"):
                         raise FileNotFoundError(name)
-                    return resources.enter_context(self._source.raster_file(path, fingerprint))
+                    stream = resources.enter_context(source.raster_file(path, fingerprint))
+                    return cast(BinaryIO, _RasterCursor(stream, self._io_errors))
 
                 try:
                     return resources.enter_context(rasterio.open(path, opener=opener))
                 finally:
-                    self._source.check_artifact(path)
+                    if self._io_errors:
+                        raise self._io_errors[0]
+                    source.check_artifact(path)
 
             direction = open_band(declaration.direction)
             accumulation = open_band(declaration.accumulation)
@@ -218,8 +314,8 @@ class RasterReader:
                 direction.transform,
                 direction.width,
                 direction.height,
-                self._manifest.artifacts[declaration.direction].sha256,
-                self._manifest.artifacts[declaration.accumulation].sha256,
+                self._band(declaration.direction)[2].sha256,
+                self._band(declaration.accumulation)[2].sha256,
             )
             pair = _Pair(direction, accumulation, grid)
             # Keep the opener closure attached to the live ownership stack if
@@ -264,8 +360,8 @@ class RasterReader:
                 col, row = floor(min(p[0] for p in corners)), floor(min(p[1] for p in corners))
                 right, bottom = ceil(max(p[0] for p in corners)), ceil(max(p[1] for p in corners))
                 if col >= 0 and row >= 0 and right <= grid.width and bottom <= grid.height:
-                    self._source.check_artifact(declaration.direction)
-                    self._source.check_artifact(declaration.accumulation)
+                    self._check(declaration.direction)
+                    self._check(declaration.accumulation)
                     return RasterRequest(col, row, right - col, bottom - row, grid, self._identity, index)
             raise RasterCoverageError("no raster pair covers the entire request")
 
@@ -284,8 +380,8 @@ class RasterReader:
             ):
                 raise ValueError("invalid raster request grid or window")
             declaration = self._declarations[request._pair]
-            for path in (declaration.direction, declaration.accumulation):
-                self._source.check_artifact(path)
+            for reference in (declaration.direction, declaration.accumulation):
+                self._check(reference)
             window = Window.from_slices(
                 (request.row, request.row + request.height), (request.col, request.col + request.width)
             )
@@ -299,8 +395,10 @@ class RasterReader:
                     accumulation, pair.accumulation.read_masks(1, window=window), pair.accumulation.nodata
                 )
             finally:
-                for path in (declaration.direction, declaration.accumulation):
-                    self._source.check_artifact(path)
+                if self._io_errors:
+                    raise self._io_errors[0]
+                for reference in (declaration.direction, declaration.accumulation):
+                    self._check(reference)
             if np.any(~np.isfinite(accumulation[accumulation_valid])) or np.any(accumulation[accumulation_valid] < 0):
                 raise ValueError("invalid consumed accumulation value")
             return RasterWindow(
@@ -311,6 +409,7 @@ class RasterReader:
                 pair.direction.window_transform(window),
                 pair.grid.crs,
                 declaration.units,
+                request,
             )
 
     def close(self) -> None:

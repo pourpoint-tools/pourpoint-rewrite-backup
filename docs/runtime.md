@@ -1,105 +1,126 @@
 # Runtime access
 
-`Dataset.open(root, cache_dir=None, storage_options=None)` supports HFX 0.4.0 only.
-The manifest discovers every consumed artifact; no listing or source-manifest
-inference occurs. Extra manifest fields and Arrow fields/metadata survive reading.
-Source normalization, rasters and full delineation are outside this interface.
+`HydroFabric` reads the final HFX 0.4.0 `spatial-geoparquet-adjacency`
+representation (version 1), including catchments, rivers, source nodes and native
+rasters. Opening reads only the manifest, not worldwide indexes or feature tables.
 
-## Costs and ownership
+```python
+from pourpoint import HydroFabric
 
-- Opening reads the manifest, full small lookup directory, IPC schema/footer and
-  bounded fingerprints. It does not read all lookup or catchment batches.
-- First topology use downloads the original graph once (remote sources), verifies
-  its SHA-256, reads local graph columns and builds compact resident numeric arrays.
-  Local original graphs are not copied. A persistent caller-selected cache avoids
-  downloading again; reopening hashes the cached original, then prepares a new
-  topology. There is no binary topology cache. Without `cache_dir`, the temporary
-  graph is removed on close.
-- `upstream(id)` returns inclusive, terminal-first membership. DAG reconvergence
-  appears once. Each call allocates `5 * unit_count` workspace bytes even for a
-  small result. Resident arrays are read-only, with no duplicate ID edge layout.
-- `records(ids)` returns all selected fields plus WKB in a `GeometryBatch`.
-  `attributes(ids, columns=None)` excludes WKB; IPC still decodes its containing
-  batch, but does not create geometry objects. `polygons(ids)` returns only ID/WKB.
-  All preserve caller order and duplicates, and raise for any missing requested ID.
-  Combine IDs in one call to share numeric lookup and catchment batch reads.
-- `GeometryBatch.decode()` returns `DecodedGeometry(ids, geometries, attributes)`.
-  It checks selected WKB type/coordinates and removes WKB from decoded attributes.
-  Decoding is not zero-copy and is not cached. Retaining both returned objects is
-  the caller's explicit choice. Selected buffers are compact copies, not slices
-  that pin discarded batches. Dictionary-encoded source columns retain only their
-  selected dictionary values, including dictionaries nested in Arrow containers.
-- The dataset owns readers, metadata and prepared arrays. Queries own workspaces
-  and selected results. `close()` is explicit and idempotent; a context manager is
-  preferred. Selected results remain usable after close. Selections from one
-  dataset instance cannot address another. Instances are not thread-safe or a
-  concurrent-service API. Metadata declarations should be treated as read-only.
+url = "https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/"
+with HydroFabric(url, cache_dir="./hfx-cache") as fabric:
+    ids = fabric.traverse("catchments", [1284709])
+    basins = fabric.subbasins(ids)
+    print(basins[0].id, basins[0].attributes.keys())
+    rivers = fabric.river_network([1])
+    linework = rivers.geometry
+```
 
-`buffer_bytes` reports resident numeric arrays, fsspec serialized read-ahead buffers
-and per-query workspace. It excludes RSS, Arrow Parquet reader internals, reader
-metadata, temporary conversion buffers and native GEOS allocations.
-`last_access` reports selected batches or row groups for the latest access.
-It is a diagnostic, not network-traffic accounting.
+These are reader operations, not point containment, delineation, refinement,
+snapping or export. Those engine operations remain separate work.
 
-## Native-grid rasters
+## Selected records and relationships
 
-`Dataset.rasters` supplies lazy prepared requests and paired native-grid reads.
-See [raster access](rasters.md) for encodings, masks, transport and lifetime.
-Raster calls do not load topology or catchment batches. Standalone raster access
-also avoids Dataset opening costs for catchment metadata.
+- `records(domain, ids, columns=None)` returns a materialized Arrow table. Domains
+  are `catchments`, `rivers`, and `river_nodes`. Input order and duplicates survive;
+  any missing ID raises `KeyError`. Projection avoids acquiring/decompressing
+  unwanted Parquet columns where the format permits.
+- `candidates(domain, bounds, levels=None, columns=None)` selects conservative bbox
+  overlaps in physical file order. Bounds are WGS84 west/south/east/north. Parquet
+  statistics prune groups; missing statistics retain them. Record bounds and tiers
+  refine candidates before full records are read using their discovered addresses.
+  Bbox overlap is **not** exact geometry intersection or point containment.
+- `relationships(domain, ids, columns=None)` returns all supplied immediate
+  relationship columns unless projected. `manifest.relationships` retains source
+  meanings, direction, target domain and artifact bindings. Flow, hierarchy,
+  incidence, cross-tier node correspondence and drainage association remain distinct.
+- `traverse(domain, ids, relationship="upstream_ids")` returns an inclusive,
+  breadth-first same-domain closure, deduplicating splits/reconvergence and cycles.
+  Missing/not-supplied connectivity and empty lists never classify natural outlets.
+  Traversal keeps an estimated 8 MiB adjacency reuse cache; per-call visited state
+  and returned IDs necessarily scale with the selected closure, not the world.
 
-## Spatial and snap candidates
+`subbasins(ids)` and `nodes(ids)` return ordinary lists of Arrow-backed features.
+`river_network(ids)` retains selected river features, complete selected-row
+relationships and supplied endpoint nodes with their relationships. Its `.geometry`
+exposes linework; it does not replace individual features. `boundary_river_ids`
+identifies supplied flow neighbors omitted from the selected rivers. They remain
+references, not invented terminals or connections.
 
-`catchment_candidates((west, south, east, north), levels=None)` uses graph Parquet
-bbox/level statistics and selected graph rows. It resolves resulting IDs through
-the published lookup and returns complete `GeometryBatch` records in graph order.
-Float32 envelopes expand conservatively, including degenerate bounds. Bbox overlap
-is not containment, and upstream membership is never clipped to this window.
+Each feature exposes `.id`, `.geometry`, `.wkb` and `.attributes`. WKB remains exact
+source bytes; decoding geometry is explicit property access and does not rewrite
+source values. `attributes["source_strahler_order"]` returns the supplied typed
+Python value or `None`; no stream order is inferred. `attributes.scalar(name)` and
+`attributes.schema` expose original Arrow types, field/schema metadata and rich
+values without lossy coercion. Full `.table` retains all fields, including WKB.
+Source provenance remains discoverable in `fabric.manifest.declarations`.
 
-`snap_candidates(name, bounds, levels=None)` returns **DecodedGeometry**, consistently
-for every set. Attributes include feature `id`, referenced `unit_id`, weight and
-optional role/bbox. Many features may refer to one unit. Candidate row groups and
-rows are pruned by bbox; absent/null bounds require decoding to test actual bounds.
-Selected geometry is decoded once and serialized WKB is not retained in the result.
-No radius test, nearest-point computation or ranking is performed. Weights are not
-comparable across sets. A set without bbox statistics can require reading all of
-its rows; no absent index is invented. Both declarations and selected references
-constrain levels.
+## Lifetime and persistent cache
 
-## Transport and integrity
+Use one context manager per sequential workload. Calls are eager; combine IDs to
+share lookup, relationship and feature reads. Instances are not a concurrent-query
+service. Materialized tables and features survive closure. Source-dependent raster
+reads must finish inside the context. Closing releases readers/connections and
+leaves persistent cache content intact.
 
-Local paths, anonymous HTTP(S) and `s3://bucket/prefix` use obstore. For S3,
-`storage_options` passes obstore constructor options such as `config` (region,
-endpoint, credentials), `credential_provider`, `client_options` and `retry_config`.
-Public HTTPS remains HTTP even when hosted by an S3 service; it needs no AWS
-credentials. Source options and source-specific caches are not shared accidentally.
-Endpoint settings are part of cache identity. Do not put credentials into URLs.
+Caching defaults to `cache=True`. `cache_dir` selects the location; otherwise it is
+`~/Library/Caches/pourpoint` on macOS, `%LOCALAPPDATA%/pourpoint` on Windows, and
+`$XDG_CACHE_HOME/pourpoint` (or `~/.cache/pourpoint`) elsewhere. `cache=False`
+disables disk caching, not bounded in-memory buffering.
 
-A thin fsspec buffered-file range hook uses obstore's conditional range operation.
-The stock obstore file adapter does not expose conditional read options. The hook
-pins strong ETag/object version, checks returned identity, range, encoding and body
-length, and relies on obstore's HTTP status/Content-Range parsing. It adds no custom
-transport, file-positioning or general cache engine. Controlled protocol tests
-cover ignored conditions, malformed ranges and short/long responses.
+One SQLite cache accumulates original byte ranges by source, artifact fingerprint
+and address. Atomic writes retain only acquired coverage and deduplicate overlap.
+No private feature format, index rebuild, per-watershed bundle or automatic disk
+eviction is involved. Cached manifest bytes pin the first snapshot in that cache.
+To deliberately adopt a newer publication, choose a new cache directory or remove
+the old cache when no readers are using it.
 
-Lookup/catchments check manifest sizes and first/last 64 KiB hashes. The directory
-checks its full digest; lookup schema binds the full catchment digest. Bounded
-hashes detect mismatches, not whole-file corruption. Trusted producer verification
-and immutable publication remain required. Graph downloads complete atomically
-only after full SHA-256 verification. Existing files are never trusted by name alone. Local originals and cached graph
-files pin device/inode/size/mtime across verification and subsequent reads; changed
-files fail before mixed spatial/topology results can be returned.
-ETags identify transport versions, not SHA-256 content. Independent full catchment
-integrity would have a different cost and is not done at ordinary opening.
+```python
+with HydroFabric(url, cache_dir="./hfx-cache", offline=True) as fabric:
+    basins = fabric.subbasins(fabric.traverse("catchments", [1284709]))
+```
 
-## Validation limits
+`offline=True` prohibits network acquisition, including HEAD. Completed workloads
+can replay with their cache intact. Missing metadata or payload raises a clear
+error, never partial results or a different snapshot. A partial cache is not a
+standalone complete HFX bundle. Users control cache retention. Cache metadata is
+trusted local state, not a tamper-proof database; stored range checksums detect
+accidental payload corruption.
 
-Used schemas, nulls, numeric capacity, paths, exact lookup matches, selected row
-addresses and selected references are validated. Topology checks unique positive
-IDs and usable same-level edges while preparing numeric adjacency. It does **not**
-run a global acyclicity/tree audit; visited state prevents repeated traversal but
-is not proof of a DAG. There is no worldwide nullable attribute catalog, parent
-certification, graph/catchment correspondence scan, area recomputation or hydrologic
-geometry audit. Source validity and GRIT's documented DAG upstream-area caveats
-remain upstream responsibilities. Malformed consumed values fail rather than
-silently producing incomplete selections.
+## Rasters, transport and measurement
+
+`fabric.rasters` resolves the manifest's local or external direction/accumulation
+pair lazily. See [native-grid raster access](rasters.md). Requests carry native grid
+and window descriptors for future export; no direction-pointer warping occurs.
+Missing rasters or inadequate coverage are errors.
+
+Local paths, anonymous HTTP(S) and S3 use the shared checked obstore transport;
+`storage_options` passes its constructor options. URLs must not carry credentials.
+External raster URLs on another origin use anonymous transport; credentials and
+source-specific configuration are never forwarded across origins.
+Remote range reads pin a strong ETag or immutable version and check range, encoding,
+identity and length. Lookup metadata binds addresses to the exact feature digest;
+relationship declarations bind every involved domain. Directories are fully hashed;
+feature/IPC/TIFF bounded head/tail fingerprints are selective checks, **not** full
+artifact verification. Immutable producer publication remains required.
+
+Cached Parquet reads prefetch projected column chunks with four concurrent
+checked transfers, split at 8 MiB each, without coalescing gaps. Scheduling is per
+row group, not worldwide. These are initial engineering constants, not proven
+optima or a 32 MiB RSS guarantee: SQLite copies, decoding and returned data have
+separate memory costs. The existing obstore transport was retained after examining
+fsspec async scheduling, avoiding a second authentication/integrity path.
+
+`stats` reports source requests (including HEAD), response payload bytes and disk
+cache-hit bytes, shared with external rasters. It is not wire traffic.
+`buffer_bytes` reports retained serialized source buffers and estimated adjacency
+storage, not process RSS, Arrow/GDAL metadata, query results or geometry allocations.
+Public end-to-end evidence documents measured scope and limitations separately.
+
+## Draft-reader compatibility
+
+Existing `Dataset.open` and its `GeometryBatch`/`UnitSelection` interfaces remain
+available for the earlier IPC draft only. They do not read the finalized public
+spatial publication. Migrate final-publication calls to `HydroFabric` and explicit
+domain methods above; do not select a reader using `format_version` alone.
+`Dataset`'s global graph preparation is not used by `HydroFabric`.
