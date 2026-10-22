@@ -106,6 +106,9 @@ class RasterWindow:
     crs: CRS
     accumulation_units: Literal["cells", "km2"]
     request: RasterRequest
+    raw_direction: npt.NDArray[np.uint8] | npt.NDArray[np.int8] | None = None
+    direction_nodata: float | None = None
+    accumulation_nodata: float | None = None
 
 
 class RasterManifest(Protocol):
@@ -410,6 +413,9 @@ class RasterReader:
                 pair.grid.crs,
                 declaration.units,
                 request,
+                direction,
+                pair.direction.nodata,
+                pair.accumulation.nodata,
             )
 
     def close(self) -> None:

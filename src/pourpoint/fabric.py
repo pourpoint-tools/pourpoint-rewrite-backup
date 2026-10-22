@@ -33,6 +33,11 @@ class HydroFabric:
         offline: bool = False,
         storage_options: Mapping[str, object] | None = None,
     ) -> None:
+        self._location = source
+        self._cache = cache
+        self._cache_dir = cache_dir
+        self._offline = offline
+        self._storage_options = storage_options
         self._source = Source(
             source, cache=cache, cache_dir=cache_dir, offline=offline, storage_options=storage_options
         )
@@ -44,6 +49,21 @@ class HydroFabric:
         except BaseException:
             self.close()
             raise
+
+    def _fork(self) -> HydroFabric:
+        """Open independent worker-owned readers against the same pinned snapshot."""
+        self._ensure_open()
+        worker = HydroFabric(
+            self._location,
+            cache=self._cache,
+            cache_dir=self._cache_dir,
+            offline=self._offline,
+            storage_options=self._storage_options,
+        )
+        if worker.manifest.declarations != self.manifest.declarations:
+            worker.close()
+            raise ValueError("publication changed while starting batch workers")
+        return worker
 
     def _ensure_open(self) -> None:
         if self._closed:

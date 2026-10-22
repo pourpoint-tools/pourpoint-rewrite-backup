@@ -3,8 +3,8 @@
 ## Purpose
 
 Pourpoint is a Python watershed-delineation engine consuming compiled HFX datasets.
-This is a Python rewrite workspace; the reader/runtime foundation is implemented,
-while complete delineation and Engine composition remain separate work.
+The reader/runtime foundation supports functional hydrological operations and
+portable QGIS delivery.
 Use `../hfx/docs/v0.4.0/vector-data.md` as the canonical input contract. Keep source-fabric
 normalization outside the engine rather than inventing a parallel HFX contract.
 
