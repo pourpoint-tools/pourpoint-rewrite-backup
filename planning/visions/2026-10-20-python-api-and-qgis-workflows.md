@@ -2,238 +2,170 @@
 
 ## Purpose and authority
 
-Document the agreed public experience so [reader/runtime design #36](https://github.com/pourpoint-tools/pourpoint/issues/36) has an API anchor. This is the design outcome of [#35](https://github.com/pourpoint-tools/pourpoint/issues/35), within [Program #2](https://github.com/pourpoint-tools/pourpoint/issues/2). It captures the requested API-design outcome, not an implemented engine; publication leaves the issue open for separate completion handling.
+This is the agreed public API for Pourpoint's hydrological operations and portable QGIS delivery. It originated in [API design discussion #35](https://github.com/pourpoint-tools/pourpoint/issues/35), completed as documentation in #37, and was revised through the subsequent backend-design discussion on 2026-10-22. Updating this document does not reopen #35 or implement the engine.
 
-**This vision authorizes documentation only. It does not authorize implementing the functions, readers, runtime types, exporters, or a validation utility described below.** Implementation requires separately approved work. The signatures illustrate confirmed semantics; unresolved defaults, concrete storage types and execution mechanisms are not implementation requirements.
+The [backend implementation vision](2026-10-22-delineation-river-networks-and-qgis-delivery.md) owns implementation constraints and evidence of completion. The [reader/runtime vision](2026-10-20-hfx-reader-and-runtime-redesign.md) and [runtime documentation](../../docs/runtime.md) govern the implemented HFX foundation and lifetime. This API document is the single public-surface authority; examples describe intended behavior, not existing engine functions or binding internal class layouts.
 
-Keep the useful simplicity of deprecated Pourpoint, not its calling syntax or seven mandatory processing stages. Useful intermediate data should be available without requiring callers to assemble internal pipeline objects. Use functions with verbs, typed data, eager execution and explicit composition. A convenience wrapper serves users who do not need fine-grained control.
+Use functional operations, eager execution, ordinary collections and typed results. `HydroFabric` owns reusable source state within `with HydroFabric(source, cache_dir=...) as fabric:`. Perform source-dependent operations, including raster-backed export, inside that context. Materialized vector outputs survive closure. Do not introduce deferred requests, `compute()` or mandatory preparation stages.
 
-## Input boundary and terminology
+HFX is the source-normalization boundary. Preserve supplied IDs, typed attributes/nulls, metadata and relationship meanings. Sub-basins and individual river features expose nonstandard fields through `.attributes["field_name"]`; do not recompute source quantities for clipped pieces or invent missing stream order. Use Shapely geometries and the existing native-grid/CRS/affine types rather than a new geometry system. Targets carry names separately from their geometry.
 
-`HydroFabric` represents opened HFX data: sub-basins, drainage connectivity and river information. It legitimately owns reusable state. HFX is the source-normalization boundary; Pourpoint exposes supplied identities, typed attributes, nulls, meanings and applicable metadata rather than inventing a parallel schema or missing values.
+This revision supersedes earlier sketches on keyword-only operation arguments, explicit level selection, named batches and partial failures, refinement result containers, default river clipping and per-target QGIS organization. Builder methods retain the concise positional layer-name/data syntax shown below.
 
-The delivered HFX 0.4.0 [spatial layout](https://github.com/pourpoint-tools/hfx/blob/main/docs/v0.4.0/spatial-layout.md) is authoritative for physical access; [vector-data.md](https://github.com/pourpoint-tools/hfx/blob/main/docs/v0.4.0/vector-data.md) supplies field meanings. The [final delivery record](https://github.com/pourpoint-tools/hfx/blob/main/docs/v0.4.0/grit-final-delivery.md) records publication. Existing IPC-reader/runtime code in this repository is not proof of compatibility with that layout. Readers and runtime representations for it remain separate design work.
+## Whole upstream selection and snapping
 
-`target` consistently identifies the spatial geometry or collection being analysed. Point and regional upstream selection are one operation. A multi-part geometry is one target; a sequence of geometries represents independent targets. Collections of sub-basins instead represent the parts of one footprint, with nested collections representing independent groups where batch operations accept them.
+The [mathematical definition](../../docs/upstream-contributing-area.md) is authoritative: U(R) is land draining to any part of target R, including its boundary. A point watershed is its singleton case; zero-length drainage paths include land within a region. Sharing a river system farther downstream is insufficient.
 
-Types below are conceptual:
+`select_upstream_subbasins(*, fabric, target, level=1, ...)` returns whole sub-basins approximating this area. For a point, identify its containing sub-basin by coordinates, then include its upstream closure. Never substitute a snapped river's catchment association. For a region, select intersecting units, including boundary intersections, and their upstream closure at the selected level. Whole-unit representation limits spatial precision; it is not exact-point raster delineation. Resolve point boundary ownership deterministically as engineering work.
 
-- `Subbasin`: a whole source drainage unit, with ID, Polygon or MultiPolygon geometry and available HFX attributes.
-- `SubbasinContribution`: a non-empty contributing portion tied to its source sub-basin. It can equal the whole unit. Retain source identity and attributes without pretending source quantities were recomputed for a clipped piece.
-- `RiverNetwork`: individual river features and their directed relationships, with source nodes where available. `.geometry` exposes their linework for geometric operations without replacing the feature/relationship representation.
-- `Geometry`, `Point`, raster types and result fields describe roles, not finalized classes or dependencies.
+Users choose HFX resolution via `level`; default to **1**, not automatically the finest available level. Do not mix nested levels or silently fall back to a different level. Missing coverage and explicitly unsupplied upstream connectivity must not masquerade as complete selection. Make failures clear and retain them per target in batches. Distinguish valid empty selections from inability to establish an answer. River levels are independent of catchment levels; expose independent river selection at `level=1` by default rather than infer numeric tier correspondence.
 
-No dedicated `SubbasinSelection` wrapper. Supplied nonstandard attributes on sub-basins and individual river features use `.attributes["field_name"]`, preserving typed values and nulls. Dataclasses versus other representations and per-feature objects versus columnar storage remain implementation choices. Do not allocate elaborate classes merely to match these sketches.
+`snap(*, target, onto, radius)` remains an optional nearest-ground-distance operation on supplied stream geometry, with radius in metres. It returns a Point and fails when no stream is in range. No weighted ranking, raster overload, implicit network or fallback. Radius naming/default and detailed distance implementation are delegated. Do not apply snapping or point refinement implicitly to regional targets.
 
-The subsequent [reader/runtime vision](2026-10-20-hfx-reader-and-runtime-redesign.md) settles one context-managed lifecycle: `with HydroFabric(source, cache_dir=...) as fabric:`. Perform source-dependent operations, including raster-backed export, inside the context. Materialized vector results and persistent cached data survive closure. It also supersedes the original explicit-raster-input requirement below with fabric-backed refinement.
+## Refinement under the equivalence assumption
 
-## Explicit operations
+When `refine` is called, **assume equivalence holds**. Let M be the upstream vector union and q the terminal unit's outlet. Assume M is equivalent to the raster watershed W_R(q) at raster resolution; for a requested point p draining to q, W_R(p) is contained in M. This is an input scientific assumption, not a property certified by HFX packaging or successful execution. Its further scientific investigation and the optional consistency utility in #38 are separate work; no mandatory preflight equality check or worldwide audit.
 
-### Whole upstream sub-basins
+Refinement uses the whole vector delineation as a computational mask:
 
-```python
-@overload
-def select_upstream_subbasins(
-    fabric: HydroFabric,
-    target: Geometry,
-) -> list[Subbasin]: ...
+1. Locate the raster cell containing the supplied point.
+2. Select the highest valid accumulation cell in a local window restricted to the mask.
+3. Trace incoming D8 flow throughout the entire mask, retaining cells whose path reaches the outlet cell without leaving that mask.
+4. Polygonize the contribution, preserving either granular or merged output shape.
 
-@overload
-def select_upstream_subbasins(
-    fabric: HydroFabric,
-    target: Sequence[Geometry],
-    *,
-    n_jobs: int = -1,
-) -> list[list[Subbasin]]: ...
-```
+Use an overridable **3 × 3 native-cell window** as the initial practical default (`window_size=3`), not a scientifically established universal optimum. Positive odd sizes express a centered window; size 1 permits no move beyond the containing cell. Resolve ties, valid-cell rules and mask admission explicitly during engineering. Accumulation validity for outlet selection must not unnecessarily discard direction-valid upstream cells. Respect native-grid directions, nodata and signed terminal semantics; do not warp direction pointers.
 
-For a point, use its coordinates to determine the containing terminal unit, then include that whole unit and its upstream units. Do not substitute a snapped river's catchment association for point containment. Boundary resolution is engineering work. This is a whole-unit representation, not a claim that all selected land drains to the exact internal point.
+This is raster outlet adjustment even when preceded by vector snapping. Preserve the selected cell so users can see what was used. A larger window can switch branches near a confluence; do not claim the default universally identifies the intended river.
 
-For regions, use the agreed [upstream contributing area definition](../../docs/upstream-contributing-area.md): land draining to any part of the geometry, including its boundary, represented by whole sub-basins. Do not snap country polygons or silently raster-refine them.
-
-Batch results preserve input order. `n_jobs=-1` requests available CPU capacity, `1` sequential execution, and positive values bound workers; the executor/backend is not chosen. Avoid deferred request objects, `compute()` and a special comprehension framework. Thread safety and actual speedups must be established during implementation, not assumed from this signature.
-
-### Stream snapping
+### Keyword-only calls and output shape
 
 ```python
-def snap(
-    target: Point,
-    *,
-    onto: Geometry,
-    radius: float,
-) -> Point: ...
+subbasins = select_upstream_subbasins(
+    fabric=fabric, target=station, level=1,
+)
+refined = refine(
+    fabric=fabric, subbasins=subbasins, target=station,
+)
+refined.subbasins    # list[SubbasinContribution]
+refined.outlet_cell
+refined.rasters.direction
+refined.rasters.accumulation
+geometry = merge(subbasins=refined.subbasins)
 ```
-
-Return the nearest point on the supplied stream geometry within the radius, using ground distance. Fail if no stream is in range, including empty input. The radius unit is metres; exact naming/default policy remains to be finalized. `snap` returns a Point, not `SnappedOutlet`. It does not read an accumulation raster, infer hydrological weights or silently switch methods.
 
 ```python
-snapped = snap(target=station, onto=network.geometry, radius=500)
-subbasins = select_upstream_subbasins(fabric, target=snapped)
+refined = refine(
+    fabric=fabric,
+    footprint=merge(subbasins=subbasins),
+    target=station,
+    window_size=5,
+)
+refined.footprint    # one Shapely Polygon or MultiPolygon
+refined.outlet_cell
+refined.rasters
 ```
 
-The number is illustrative, not a default. `onto` need not come from HFX: the user supplies stream geometry. No historical named snap-set requirement. Snapping is optional when a caller already has the intended location; refinement does not require a preceding call to it.
+`subbasins=` and `footprint=` are mutually exclusive. Sub-basins in means contributing sub-basins out; one footprint in means one refined footprint out. Use typed result variants as needed, not a proliferation of nullable unrelated fields. A merged contribution is geometry, not a fabricated source sub-basin. Retain source identity/attributes on granular contributions without pretending source quantities were recomputed for clipped pieces; omit empty pieces.
 
-### Refinement: whole-footprint raster delineation
-
-Refinement is an explicit, computationally expensive alternative to whole-unit delineation. Pass `HydroFabric`; the backend resolves its declared direction/accumulation pair and reads needed native-grid windows. This reader/runtime decision supersedes the original requirement to pass both raster inputs separately. Missing rasters or inadequate coverage fail clearly; a custom raster override is not required.
-
-```python
-@overload
-def refine(
-    fabric: HydroFabric,
-    subbasins: Sequence[Subbasin],
-    *,
-    target: Point,
-    window_size: int,
-) -> list[SubbasinContribution]: ...
-
-@overload
-def refine(
-    fabric: HydroFabric,
-    footprint: Polygon | MultiPolygon,
-    *,
-    target: Point,
-    window_size: int,
-) -> Polygon | MultiPolygon: ...
-```
-
-These names/types illustrate the accepted inputs and outputs; the window parameter spelling and defaults are not settled. Refinement:
-
-1. Locates the cell containing the supplied point.
-2. Chooses the highest valid accumulation cell in a local window restricted to the footprint.
-3. Traces incoming D8 connections across the entire footprint.
-4. Constructs either contributing pieces or their merged geometry.
-
-Outlet-cell selection is private algorithm work, not another public primitive or a second snapping API. Do not branch on whether the input point came from vector snapping. Use local maximum accumulation initially, not a new weighted score or a basin-dependent accumulation threshold. Window size, ties, valid-cell conventions and chosen-cell provenance need concrete definitions later. The window adjusts local raster alignment; it does not guarantee identification of the intended river near a confluence. No silent fallback to coarse polygons if explicitly requested refinement fails.
-
-With granular input, omit empty contributions. Do not independently trace within each sub-basin: flow can cross their boundaries. Preserve the equivalence:
+Both forms trace across the same complete combined mask. Preserve:
 
 ```text
-union(refined contributions) ≡ refine(union(sub-basins))
+merge(granular_result.subbasins) ≡ footprint_result.footprint
 ```
 
-#### Scientific assumption
+Do not independently trace within each source polygon, append untouched upstream polygons, or introduce geometry repair/hole filling that silently changes drainage coverage. Define pixel boundary and contribution attribution conventions that preserve this equivalence.
 
-Let q be the terminal unit's declared outlet, p the requested point, M the union of the terminal unit and all upstream units, and W_R(x) the watershed under the supplied raster flow directions. Refinement assumes:
+`outlet_cell` identifies a source-grid row and column, not indices relative to a read window. Reuse the grid descriptor, including CRS, affine and grid identity. Expose ordinary Shapely `.center` and `.geometry` (the cell polygon) in the native grid CRS. Derive them from the cell/grid rather than store inconsistent copies. The center is a display location, not a more accurate station coordinate.
 
-```math
-M \equiv W_R(q)
-```
+Raster subset descriptors retain the direction/accumulation coverage used; users need not reconstruct windows for export. Source-dependent export occurs inside the fabric context. Materialized vector results survive closure. Missing rasters, inadequate coverage and failed explicit refinement never silently return coarse geometry.
 
-For a point whose raster drainage reaches q:
+`merge(*, subbasins=...)` accepts whole units or contributions and returns Polygon/MultiPolygon. Nested groups produce separate merged geometries, not one union across targets. Empty-input dispatch and concrete overloads are engineering work.
 
-```math
-W_R(p) \subseteq W_R(q) \equiv M
-```
+## Convenience result and batches
 
-**The upstream vector union represents the raster watershed at the terminal unit's outlet. Refinement delineates the requested point within that enclosing footprint.** Equivalence means drainage coverage at raster resolution, not necessarily identical simplified vector coordinates. Producer consistency, outlet-cell matching and boundary conventions matter; common packaging alone does not establish the assumption.
+`delineate` composes the explicit operations; it is not a different algorithm. Use keyword-only typed arguments including `fabric`, `target`, `level=1`, optional `snap_onto`, `refine`, `merge`, and explicit snap/window controls. Share the refinement window default. Retain source/provenance information and original versus adjusted point locations without requiring users to reconstruct them.
 
-More explicitly, let G_M be cells admitted by the footprint mask, c_out the selected cell, and F the D8 downstream-neighbour function. Retain cells c for which some k >= 0 satisfies F^k(c) = c_out and every intermediate cell remains in G_M. Polygonize their footprints. Do not then add untouched upstream polygons. At q, under the consistency assumption, raster delineation recovers the whole mask. The mask is an enclosing computational domain, not just the terminal polygon.
+A single `DelineationResult` exposes:
 
-This replaces historical terminal-only refinement, which could retain units entering below the requested point. Refinement may exclude whole selected units or return partial contributions; do not assume stronger source-construction properties without evidence. Raster/vector network consistency is an input assumption, not a guarantee that every vector-intersected pixel is a drainage cell.
+- `.subbasins`: whole units without refinement, contributing portions with refinement; use this name rather than `.parts` or `.contributions`.
+- `.geometry`: merged geometry when requested, otherwise None.
+- `.outlet_cell`: selected raster cell when refined, otherwise None.
+- `.rasters`: applicable refinement subset information, absent when no refinement occurred; concrete absence representation is engineering work.
 
-The optional utility to check this assumption for user-selected cases is deferred to [#38](https://github.com/pourpoint-tools/pourpoint/issues/38). It is not a mandatory refinement gate, worldwide audit or validator framework.
+### Target identity
 
-[Lindsay, Rothwell & Davies (2008)](https://doi.org/10.1029/2007WR006507), sections 3–5, compares maximum accumulation, nearest threshold-qualified cells and AORA. Maximum accumulation is established practice but can move outlets across confluences; AORA still requires thresholds and station metadata. This vision adopts one known local rule, not a claim of universal scientific optimality. See [full-paper discussion](https://github.com/pourpoint-tools/pourpoint/issues/35#issuecomment-6277313122).
-
-### Merge
+A single geometry represents one target, including a multipart geometry. For batch target inputs accept:
 
 ```python
-@overload
-def merge(
-    subbasins: Sequence[Subbasin],
-) -> Polygon | MultiPolygon: ...
-
-@overload
-def merge(
-    subbasins: Sequence[Sequence[Subbasin]],
-    *,
-    n_jobs: int = -1,
-) -> list[Polygon | MultiPolygon]: ...
+target = {"upper_station": upper_point, "lower_station": lower_point}
+# or
+target = [upper_point, lower_point]
 ```
 
-Also accept corresponding contribution collections. A public merge function is justified as a meaningful workflow step even if it wraps `union_all`. Each batch group becomes one geometry; independent groups are never merged together. Empty-input semantics and exact overload declarations remain to be designed.
+Dictionary keys supply names; list entries receive UUID strings generated once when accepting the batch. Preserve names, order and input indices through results, issues, refinement and export. Duplicate geometries remain independent targets. Repeated list-based calls get new UUIDs; dictionary names provide stable cross-run naming. Names are target identities within a request, not source feature IDs. Engineering must preserve identity through explicit composition without requiring convenience delineation or regenerating names between stages.
 
-### Rivers
+Batch upstream selection and delineation follow this convention. Maintain the same per-target isolation and correspondence wherever other operations expose batch forms; do not confuse a collection of sub-basins forming one footprint with independent targets. Batch execution uses `n_jobs=-1` for available CPU capacity, `1` for sequential work and positive bounds otherwise. Establish safe scheduling and actual performance; do not assume shared-reader thread safety.
 
-```python
-BasinPart = Subbasin | SubbasinContribution
+### Failure behavior
 
+Single-target calls return a value or raise a meaningful exception. Batch calls return a small typed container with `.results` (one ordered slot per input) and `.issues`. Successful selection slots remain ordinary lists of sub-basins; do not revive a dedicated selection wrapper. A failed target has None in its slot, not an empty geometry/list. Retain its input index, name, machine-readable failure code and human-readable reason. Preserve target identity on successful slots through the batch metadata/result representation; exact storage is delegated.
 
-def select_rivers(
-    fabric: HydroFabric,
-    target: BasinPart | Sequence[BasinPart],
-    *,
-    clip: bool = False,
-    include_downstream: bool = False,
-) -> RiverNetwork: ...
-```
+For example, one station outside level-1 coverage produces a `selection.no_coverage` issue while independent stations succeed. Codes in this document illustrate the classification, not a complete taxonomy. Single exceptions and batch issues should share failure meanings. Expected target-local failures are collected; invalid shared configuration, fatal integrity/internal contract failures and unexpected programming errors raise. Do not blanket-catch arbitrary exceptions. A failed refinement makes that target fail, not return a successful coarse delineation.
 
-Treat the supplied parts as one footprint and select river features for it; an actual polygon union is not mandated internally. Default to whole source geometries. Clipping is explicit and must not invent flow connections or natural outlets. Detailed intersection/boundary rules and independent batch overloads remain engineering design work.
+Do not initially add successful-result issue collections, severity hierarchies or an `on_issue` policy switch without a concrete need. Durable batch issues are required; notification mechanics can remain small. Partial success must not depend on users noticing log output.
 
-`include_downstream=True` returns the network within the basin AND every supplied downstream continuation from rivers leaving it, through bifurcations and reconvergence, as far as HFX provides. Deduplicate reconvergent features. Follow flow edges, not all incidence inferred from shared nodes. Dataset limits are not necessarily natural outlets; preserve source distinctions where available. A single selected mainstem is not the requested behavior.
-
-The intended clipping interaction is to clip the basin portion while retaining an explicitly requested downstream extension outside it; precise feature identity and boundary handling remain to be specified. HFX supplies nullable single-outlet catchment coordinates and can represent multiple/no outlets through source data; handling those cases is not a requirement for a user-supplied arbitrary representative outlet.
-
-River names, stream order and all other attributes come from HFX. Do not equate level/tier with stream order or infer missing order. Live public GRIT Parquet schema inspection confirmed nullable `source_strahler_order: int64`, plus source mainstem, width, drainage-area and name fields. This verified column availability, not global non-null completeness. Preserve other fields even if the current use case is only styling line thickness.
-
-## Convenience workflow
-
-`delineate` wraps the operations for users who want a simple call. It is not an alternative hydrological algorithm. Preserve simplicity, deliberately not legacy `Engine.delineate(lat=..., lon=...)` compatibility. Use explicit typed keyword arguments rather than an opaque kwargs bag.
+## Rivers as one combined footprint
 
 ```python
-result = delineate(
-    fabric,
-    target=station,
-    snap_onto=network.geometry,
-    refine=True,
-    merge=True,
-    # Snap radius and raster-window options will be explicit;
-    # their wrapper names/defaults remain to be specified.
-)
-
 rivers = select_rivers(
-    fabric,
-    target=result.parts,
+    fabric=fabric,
+    target=refined.subbasins,
+    level=1,
     include_downstream=True,
 )
 ```
 
-`DelineationResult.parts` is a list of whole sub-basins without refinement, or non-empty contributions with refinement. A merged geometry is available when merge is requested; do not force it when merge is false. Retain useful source/provenance information without forcing callers to understand every field. Exact field layout, original-selection retention, raster descriptors and batch result signatures remain runtime/API elaboration work. Do not silently apply point snapping/refinement to regional targets.
+Accept a sub-basin/contribution or collection as the parts of one footprint. Internal sub-basin boundaries have no effect. An actual polygon union is not mandated internally.
 
-## QGIS-ready delivery
+By default return river portions inside that combined footprint; remove the previous `clip` option. `include_downstream=True` adds every supplied outgoing continuation beyond its combined boundary, through bifurcations and reconvergence, deduplicating source features. Do not extend separately at each constituent sub-basin boundary, select only a mainstem, or infer flow from shared-node incidence. Handle a boundary falling inside a river feature without creating gaps; direction/orientation and geometry ambiguities require engineering investigation, not invented flow.
 
-The objective is a portable deliverable that opens in QGIS with its layers configured, not merely exported geometry. Use a folder containing a `.qgz` project, GeoPackage vector/relationship tables and GeoTIFF rasters, with relative references. A custom `.pourpoint_bundle` extension would not be natively understood by QGIS and is not required.
+`RiverNetwork` retains individual feature identities, typed attributes, supplied directed relationships and available nodes. `.geometry` exposes linework without replacing that representation. Clipped pieces retain source identity/provenance; their new endpoints are not natural outlets. Dataset limits remain distinct from source-described natural termination where supplied.
+
+## Portable QGIS delivery
+
+Keep a portable folder containing a `.qgz` project, GeoPackage vector/relationship tables and GeoTIFF rasters, using relative references. Do not introduce a custom bundle extension. `QGISBundle` supports chaining and incremental construction, explicit vector/raster additions and one consistent `add_result` method:
 
 ```python
+QGISBundle().add_result(result).write("watershed/")
+QGISBundle().add_result(refined).write("watershed/")
+QGISBundle().add_result(batch).write("watersheds/")
+```
+
+Accept standalone refinement results as well as convenience delineation results and their batches. Do not require callers to pass `batch.results`, losing identity/issues. Add available outputs only; do not silently merge, delineate or trace rivers during export.
+
+Explicit composition remains practical:
+
+```python
+cell = refined.outlet_cell
 (
     QGISBundle()
-    .add_result(result)
-    .add_vector("rivers", rivers)
+    .add_vector("subbasins", refined.subbasins)
+    .add_vector("watershed", geometry)
+    .add_vector("outlet_cell", cell.geometry, crs=cell.grid.crs)
+    .add_raster("flow_direction", refined.rasters.direction)
+    .add_raster("flow_accumulation", refined.rasters.accumulation)
     .write("watershed/")
 )
 ```
 
-`QGISBundle` is a proposed Python builder, not a new on-disk standard. Support both chaining and incremental construction. Explicit `add_vector(name, data)` and `add_raster(name, data)` let users choose custom content. Do not perform hidden delineation or river tracing during export.
+An outlet cell belongs to the raster; its polygon is an explicit vector representation for highlighting it. Give raw vector geometry unambiguous CRS treatment; never assume a native raster cell polygon is WGS84. Highlight outlet cells with an outline over the rasters. `add_result` performs that conversion using the retained CRS.
 
-`add_result` is the complete-result convenience: add available merged geometry, individual parts and applicable outlet/provenance layers; include direction and accumulation subsets used when refinement ran. No separate include-rasters switch is needed for this convenience path. Customization uses individual result fields and explicit additions. `refine=True` does not itself write files. Raster subset descriptors/ownership remain runtime work; callers should not need to reconstruct raster selections to export a completed result. Document export cost and preserve numerical values, grid/CRS and nodata, not rendered pictures. Exact footprint/window masking and storage/lifetime must be specified in reader/export design.
+### Per-target organization
 
-Example deliverable:
+For batches use named QGIS groups, for example `upper_station` and `lower_station`, each containing its available watershed, sub-basins, outlet cell, direction and accumulation layers. Export **one direction/accumulation raster pair per refined target**, not per contributing sub-basin and not a shared cross-target mosaic. Overlapping targets may duplicate exported pixels; persistent source reads can still reuse cached bytes. Resolve safe filenames/layer names without losing original target names.
 
-```text
-watershed/
-  watershed.qgz
-  vectors.gpkg
-  flow_direction.tif
-  flow_accumulation.tif
-```
+Export both rasters over the **whole vector delineation mask**, not only the final contributing watershed and not unrelated corners of the rectangular read window. Outside-mask cells become nodata. Preserve numerical values within the mask, native CRS/grid and source nodata semantics. Retain final watershed and outlet-cell overlays so users can inspect what refinement excluded. GeoTIFF arrays are still rectangular; nodata expresses the mask.
 
-River export preserves individual features, supplied typed attributes/nulls and relationships. A companion directed connection table preserves upstream/downstream IDs instead of flattening branching connectivity into text. Other available HFX information must not be discarded because plotting has no immediate need for it. Work out faithful encoding where GeoPackage cannot directly represent Arrow values; do not silently coerce away information. QGIS styling may consume supplied stream order for line widths, but styling does not define the retained schema. Exact mapping of metadata/relationships, layer names, styling and potential standalone GeoPackage-builder support are not finalized here.
+Preserve failed-target issues in an export table with target names/indices, codes and reasons. Do not fabricate empty watersheds or outlet cells for failures. Preserve target identity on exported features separately from source IDs.
 
-## Handoff and evidence of success
-
-For this documentation-only outcome, success is this coherent, published API anchor linked from #35 and available to #36. It describes the intended behavior without pretending the readers, types or functions exist. It does not revise the Program map or implement river workflow #34 independently.
-
-Subsequent design should resolve concrete representation within the reader/runtime vision’s lifetime contract, signatures/defaults, error details, accumulation-cell ties/window conventions, batch corner cases, export encoding and project styling against this intent. These are not an invitation to reopen functional composition, public/private cell selection, whole-footprint refinement, HFX authority, or ordinary collection results. Material changes require discussion rather than silent compatibility machinery.
-
-Implementation, tests of future engine behavior, source normalization, new ranking formulas, alternative refinement algorithms, routing/impact simulation, and automatic adoption of the possible equality checker are excluded from this publication.
+River export keeps individual features and directed connections in companion tables, with supplied attributes/nulls and applicable metadata. Faithful encoding of rich Arrow values in GeoPackage is engineering work; do not silently stringify or discard information. Styling may use supplied stream order but must not invent it or constrain retained fields. Export cost and source-dependent lifetime must be clear.
