@@ -147,8 +147,6 @@ def delineate(
         if snap_onto is not None:
             from pourpoint.rivers import snap
 
-            if not isinstance(geometry, Point) or geometry.is_empty:
-                raise OperationError("snap.point_required", "snapping requires a nonempty point target")
             adjusted = snap(target=geometry, onto=snap_onto, radius=radius)
         units = _select(fabric=reader, target=adjusted, level=level)
         outlet = None

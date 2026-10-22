@@ -148,7 +148,7 @@ def select_rivers(
 type SnapGeometry = RiverNetwork | River | BaseGeometry | Sequence[River]
 
 
-def snap(*, target: Point, onto: SnapGeometry, radius: float) -> Point:
+def snap(*, target: BaseGeometry, onto: SnapGeometry, radius: float) -> Point:
     """Nearest point on supplied EPSG:4326 line segments, measured on WGS84 in metres.
 
     Segment positions retain source straight longitude/latitude interpolation, not
@@ -160,9 +160,9 @@ def snap(*, target: Point, onto: SnapGeometry, radius: float) -> Point:
     degree distance or stream rank; equal minima retain input order.
     """
     if not isinstance(target, Point) or target.is_empty or not all(isfinite(v) for v in target.coords[0]):
-        raise ValueError("snap target must be a finite Point")
+        raise OperationError("snap.point_required", "snap target must be a nonempty finite Point")
     if not -180 <= target.x <= 180 or not -90 <= target.y <= 90:
-        raise ValueError("snap target must use WGS84 longitude/latitude")
+        raise OperationError("snap.point_required", "snap target must use WGS84 longitude/latitude")
     if not isfinite(radius) or radius < 0:
         raise ValueError("radius must be finite and nonnegative")
     if isinstance(onto, RiverNetwork):

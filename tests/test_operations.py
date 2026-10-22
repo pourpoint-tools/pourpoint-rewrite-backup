@@ -267,3 +267,25 @@ def test_snapping_delineation_batch_isolates_empty_point(tmp_path: Path, n_jobs:
             delineate(fabric=fabric, target=targets, snap_onto=stream, radius=-1, n_jobs=n_jobs)
         with pytest.raises(ValueError, match="stream line geometry"):
             delineate(fabric=fabric, target=targets, snap_onto=box(1, 1, 1.25, 1.25), n_jobs=n_jobs)
+
+
+@pytest.mark.parametrize("point", [Point(float("inf"), 1), Point(181, 1), Point(1, 91), Point()])
+def test_snapping_invalid_point_has_single_and_batch_failure_meaning(tmp_path: Path, point: Point) -> None:
+    from shapely.geometry import LineString
+
+    from pourpoint import delineate, snap
+
+    stream = LineString([(1, 1), (1.25, 1.25)])
+    with pytest.raises(OperationError) as caught:
+        snap(target=point, onto=stream, radius=100)
+    assert caught.value.code == "snap.point_required"
+    with HydroFabric(make_spatial_bundle(tmp_path / "source"), cache=False) as fabric:
+        result = delineate(
+            fabric=fabric,
+            target={"invalid": point, "station": Point(1.125, 1.125)},
+            snap_onto=stream,
+        )
+        assert result.results[0] is None
+        assert result.results[1] is not None
+        assert [unit.id for unit in result.results[1].subbasins] == [10]
+        assert [(issue.index, issue.name, issue.code) for issue in result.issues] == [(0, "invalid", caught.value.code)]
