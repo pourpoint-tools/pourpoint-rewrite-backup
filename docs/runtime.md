@@ -16,8 +16,8 @@ with HydroFabric(url, cache_dir="./hfx-cache") as fabric:
     linework = rivers.geometry
 ```
 
-These are reader operations, not point containment, delineation, refinement,
-snapping or export. Those engine operations remain separate work.
+These are source-reader operations. See [hydrological operations](operations.md)
+for upstream selection, delineation, refinement, snapping and portable export.
 
 ## Selected records and relationships
 

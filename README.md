@@ -2,8 +2,9 @@
 
 Private workspace for a fresh Python rewrite of pourpoint, a watershed
 delineation engine consuming [HFX](https://github.com/CooperBigFoot/hfx)
-datasets. The final HFX 0.4.0 spatial reader and runtime foundation are available.
-Complete delineation and export workflows are not implemented.
+datasets. Functional upstream selection, raster refinement, river selection and
+portable QGIS export use the final HFX 0.4.0 spatial reader and runtime.
+See [hydrological operations](docs/operations.md) for usage and conventions.
 
 ## Reader and runtime
 
@@ -18,7 +19,7 @@ with HydroFabric("https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.
 
 See [runtime access](docs/runtime.md) for costs, candidate APIs, integrity and lifetime.
 [Native-grid raster access](docs/rasters.md) supplies prepared paired direction and
-accumulation windows; it does not implement terminal refinement.
+accumulation windows for whole-footprint refinement.
 GRIT source data carry CC BY-NC 4.0 terms and attribution in their bundle; this
 repository's code license does not replace source-data terms.
 
@@ -27,7 +28,7 @@ repository's code license does not replace source-data terms.
 Use Python 3.13 and [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv sync
+uv sync --group dev
 uv run python -m pytest
 uv run ruff format --check
 uv run ruff check
