@@ -84,3 +84,17 @@ and successful live execution do not prove vector/raster equivalence globally.
 GRIT data and exports remain CC BY-NC 4.0: Michel Wortmann, Louise Slater,
 Laurence Hawker, Yinxue Liu and Jeffrey Neal (2025),
 https://doi.org/10.5281/zenodo.15715535; hosting sponsored by Upstream Tech.
+
+
+## Review repairs
+
+Independent review identified target-local snapping/refinement failures escaping batch
+isolation and missing publication provenance on standalone refinements. Focused
+regressions were observed failing before the fixes. Both refinement forms now carry
+manifest declarations, and `add_result` writes them for single and batch exports.
+Target errors remain distinct from invalid shared radius, window or stream configuration.
+
+[Repaired-source replay](receipts/backend-repaired-live.json) on `693bf2e` checks full offline
+operations and standalone footprint provenance against the manifest, in addition to
+exact raster fidelity. [Relocated batch QGIS](receipts/qgis-repaired-live.json) and
+[standalone QGIS](receipts/qgis-standalone-live.json) load all available layers.
