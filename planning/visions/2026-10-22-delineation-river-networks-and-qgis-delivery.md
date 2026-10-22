@@ -6,7 +6,7 @@ Implement the hydrological operations and portable QGIS delivery on the merged H
 
 This is a standalone implementation handoff, building on the [API design discussion #35](https://github.com/pourpoint-tools/pourpoint/issues/35), its [API vision](2026-10-20-python-api-and-qgis-workflows.md), and the [implemented reader/runtime vision](2026-10-20-hfx-reader-and-runtime-redesign.md). Issue #35 already completed API documentation; this work neither reopens nor designates completion of that issue. Publishing this document does not implement the engine or complete other Program work.
 
-This vision supersedes the earlier API on keyword-only arguments, explicit level selection, batch identities/failures, refinement result containers, default river clipping and per-target export organization. Other agreed semantics, including optional geometric snapping and faithful HFX attributes, remain in force. Examples describe intended behavior, not existing functions or binding internal class layouts.
+The API vision has been updated in place with the agreed public surface. This backend handoff references it rather than defining competing signatures or result types. Publication is documentation only; implementation begins through a separate implementation invocation.
 
 ## Existing foundation and boundaries
 
