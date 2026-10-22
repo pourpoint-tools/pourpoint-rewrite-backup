@@ -1,0 +1,194 @@
+{
+  "measurements": [
+    {
+      "label": "first-including-open",
+      "elapsed_seconds": 32.528513250057586,
+      "transfer": {
+        "requests": 224,
+        "transferred_bytes": 32842766,
+        "cache_hit_bytes": 98196135
+      },
+      "rss_peak_bytes": 667680768,
+      "result": {
+        "ids": [
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          [
+            1284710
+          ],
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          null
+        ],
+        "region_ids": [
+          1284708,
+          1284709,
+          1284710
+        ],
+        "issues": [
+          {
+            "index": 3,
+            "name": "ocean",
+            "code": "selection.no_coverage",
+            "reason": "no catchment coverage for target at level 1"
+          }
+        ]
+      }
+    },
+    {
+      "label": "same-context",
+      "elapsed_seconds": 0.3557990420376882,
+      "transfer": {
+        "requests": 0,
+        "transferred_bytes": 0,
+        "cache_hit_bytes": 119918081
+      },
+      "rss_peak_bytes": 958545920,
+      "result": {
+        "ids": [
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          [
+            1284710
+          ],
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          null
+        ],
+        "region_ids": [
+          1284708,
+          1284709,
+          1284710
+        ],
+        "issues": [
+          {
+            "index": 3,
+            "name": "ocean",
+            "code": "selection.no_coverage",
+            "reason": "no catchment coverage for target at level 1"
+          }
+        ]
+      }
+    },
+    {
+      "label": "reopen",
+      "elapsed_seconds": 0.40889999992214143,
+      "transfer": {
+        "requests": 0,
+        "transferred_bytes": 0,
+        "cache_hit_bytes": 131014986
+      },
+      "rss_peak_bytes": 1424375808,
+      "result": {
+        "ids": [
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          [
+            1284710
+          ],
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          null
+        ],
+        "region_ids": [
+          1284708,
+          1284709,
+          1284710
+        ],
+        "issues": [
+          {
+            "index": 3,
+            "name": "ocean",
+            "code": "selection.no_coverage",
+            "reason": "no catchment coverage for target at level 1"
+          }
+        ]
+      }
+    },
+    {
+      "label": "offline",
+      "elapsed_seconds": 0.33441479108296335,
+      "transfer": {
+        "requests": 0,
+        "transferred_bytes": 0,
+        "cache_hit_bytes": 84740794
+      },
+      "rss_peak_bytes": 1819738112,
+      "result": {
+        "ids": [
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          [
+            1284710
+          ],
+          [
+            1284708,
+            1284709,
+            1284710
+          ],
+          null
+        ],
+        "region_ids": [
+          1284708,
+          1284709,
+          1284710
+        ],
+        "issues": [
+          {
+            "index": 3,
+            "name": "ocean",
+            "code": "selection.no_coverage",
+            "reason": "no catchment coverage for target at level 1"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/",
+  "code_sha256": {
+    "src/pourpoint/vectors.py": "c60d0356f7afc668cedc30df7ce35ad0812517821f70ef6de569d345e3a0787e",
+    "src/pourpoint/catchments.py": "f4c5a6822488772ec5d526354687915f39cc9cef89a98acaf6af909d4cdcd582",
+    "src/pourpoint/metadata.py": "2d12e638fb50b07d55ebc7c84123fe6296544ffff84db2860f059a433eb1f60d",
+    "src/pourpoint/rasters.py": "9d9616bc866c3481c683cfc45f5f843ffea4cf01041ff6df015a66881dcd1da3",
+    "src/pourpoint/results.py": "9c6babdfbfdbbea9894a3113b5373635b189910792dd6d7982e21a7b855b57d5",
+    "src/pourpoint/fabric.py": "d448d3eb399442a17258a8f8745faf2e3f464bd521d4d9bf768bc1b44b79cf4d",
+    "src/pourpoint/_batch.py": "5c30f1f21efb5ae98df2fea8dc419329cdc8b0f804a7f37604db65437f26268c",
+    "src/pourpoint/cache.py": "cde5efbc4eccbdeb8bc46a8602d55787602029a959bb929fcf5157c96ff0ee64",
+    "src/pourpoint/__init__.py": "f885ba72d9137750d17f3339a7c76803eacd330ab82b2e2abdafa619f8346d8f",
+    "src/pourpoint/features.py": "18ced061cc6292d24391fcadae93328608527bf97bb1e162745a1f36b99439c9",
+    "src/pourpoint/refinement.py": "add9f10e10e6e3bf6b935d0fafedea72bcd2c80c4909d815e15c23d22102edc2",
+    "src/pourpoint/spatial.py": "c2d088afbe603847aa151184199855d341e104b45e1b22d5778c0361337d74d0",
+    "src/pourpoint/rivers.py": "0ca10a06f6162d5c43fc7a93193f53f3adf7996199983691939e1970813eaa7c",
+    "src/pourpoint/dataset.py": "747a11a3b93fd32cd7d8963d0e581e327662d52d1cb98564a539b8e77f0ddbb8",
+    "src/pourpoint/operations.py": "0f59ea3af742a20e564dd7a54eb230caebc72acf91d9094cd2809f53303bb086",
+    "src/pourpoint/_selection.py": "c88eaff67843de4c42c3a03324044c7ee463d366801c5c47537408981a46afb6",
+    "src/pourpoint/_validation.py": "6db22e0ae7413e7e218e4bf4f97033d67b87856de66518f1c3081f7b03764e99",
+    "src/pourpoint/geometry.py": "074b8f7d60ba286e039b84f9a4460423b9438f0c5d9b3abc024a8efef5629647",
+    "src/pourpoint/storage.py": "a619599886a5f8153a4c0f36fea983ac1389d29cecd91b69ceb961a4b544d3ac",
+    "src/pourpoint/topology.py": "720fb1485559e95f5e9a88686e61c70a8be9c8977c1d8475c7aaa75fb03c4d87",
+    "src/pourpoint/qgis.py": "36fcb5ba1d71a42163ae13a232b9ca39a2f44c101813d734eb7f4bc76a43320c"
+  },
+  "scope": "complete coarse selection/delineation, not refinement/export",
+  "status": "passed"
+}
