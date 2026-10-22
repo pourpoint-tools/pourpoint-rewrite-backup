@@ -216,6 +216,12 @@ try:
                 xml = ET.fromstring(z.read("watershed.qgs"))
                 refs = [e.text for e in xml.findall(".//datasource")]
                 assert refs and all(v.startswith("./") for v in refs)
+            standalone = refine(fabric=f, footprint=merge(subbasins=selected), target=point)
+            standalone_path = QGISBundle().add_result(standalone).write(OUT / "standalone-footprint")
+            with sqlite3.connect(standalone_path / "vectors.gpkg") as db:
+                metadata = json.loads(db.execute("SELECT metadata FROM result_metadata").fetchone()[0])
+                assert metadata == dict(f.manifest.declarations)
+            report["standalone_provenance"] = metadata
             report["export_checks"] = {
                 "rasters": checked,
                 "issues": issues,

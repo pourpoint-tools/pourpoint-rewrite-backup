@@ -120,7 +120,7 @@ class QGISBundle:
         self._rasters: list[tuple[str, RasterSubset, str | None]] = []
         self._groups: list[str] = []
         self._issues: list[BatchIssue] = []
-        self._results: list[tuple[str | None, int | None, DelineationResult]] = []
+        self._results: list[tuple[str | None, int | None, ExportResult]] = []
 
     def add_vector(
         self,
@@ -162,8 +162,7 @@ class QGISBundle:
         return self
 
     def _result(self, result: ExportResult, group: str | None, index: int | None) -> None:
-        if isinstance(result, DelineationResult):
-            self._results.append((group, index, result))
+        self._results.append((group, index, result))
         start = len(self._vectors)
         if isinstance(result, FootprintRefinement):
             self.add_vector("watershed", result.footprint, crs="EPSG:4326")
@@ -201,7 +200,13 @@ class QGISBundle:
             db.executemany(
                 "INSERT INTO result_metadata VALUES (?, ?, ?, ?, ?)",
                 [
-                    (name, index, json.dumps(dict(result.provenance)), result.original_target.wkb, result.target.wkb)
+                    (
+                        name,
+                        index,
+                        json.dumps(dict(result.provenance)),
+                        result.original_target.wkb if isinstance(result, DelineationResult) else None,
+                        result.target.wkb if isinstance(result, DelineationResult) else None,
+                    )
                     for name, index, result in self._results
                 ],
             )

@@ -147,3 +147,52 @@ def test_rivers_keep_clipped_geometry_and_directed_relationships(tmp_path: Path)
         assert geometry.equals(LineString([(0, 0), (1, 0)]))
         payload = db.execute("SELECT payload FROM source_arrow WHERE kind = 'relationships'").fetchone()[0]
         assert pa.ipc.open_stream(payload).read_all().equals(relationships)
+
+
+@pytest.mark.parametrize("granular", [False, True])
+def test_standalone_refinement_export_retains_publication_metadata(tmp_path: Path, granular: bool) -> None:
+    import json
+
+    import numpy as np
+    from conftest import add_pair
+    from rasterio.transform import from_origin
+    from shapely.geometry import Point
+    from spatial_fixture import make_spatial_bundle
+
+    from pourpoint import HydroFabric, refine
+
+    source = make_spatial_bundle(tmp_path / "fabric")
+    manifest_path = source / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["auxiliary"] = []
+    manifest["attribution"] = "Independent source authors"
+    manifest["license"] = "CC BY-NC 4.0"
+    manifest_path.write_text(json.dumps(manifest))
+    add_pair(
+        source,
+        direction=np.array([[0]], dtype="uint8"),
+        accumulation=np.array([[1]], dtype="int32"),
+        transform=from_origin(0, 1, 1, 1),
+    )
+    footprint = box(0, 0, 1, 1)
+    with HydroFabric(source) as fabric:
+        if granular:
+            table = pa.table({"id": [7], "geometry": [footprint.wkb]})
+            result = refine(fabric=fabric, subbasins=[Subbasin(table, 0)], target=Point(0.5, 0.5))
+        else:
+            result = refine(fabric=fabric, footprint=footprint, target=Point(0.5, 0.5))
+    folder = QGISBundle().add_result(result).write(tmp_path / "bundle")
+    with sqlite3.connect(folder / "vectors.gpkg") as db:
+        rows = db.execute("SELECT metadata FROM result_metadata").fetchall()
+    assert len(rows) == 1
+    metadata = json.loads(rows[0][0])
+    assert metadata["license"] == "CC BY-NC 4.0"
+    assert metadata["attribution"] == "Independent source authors"
+    from pourpoint import BatchResult, Target
+
+    batch = BatchResult([result], [Target(0, "station", Point(0.5, 0.5))], [])
+    batch_folder = QGISBundle().add_result(batch).write(tmp_path / "batch")
+    with sqlite3.connect(batch_folder / "vectors.gpkg") as db:
+        name, index, encoded = db.execute("SELECT target_name, target_index, metadata FROM result_metadata").fetchone()
+    assert (name, index) == ("station", 0)
+    assert json.loads(encoded) == metadata

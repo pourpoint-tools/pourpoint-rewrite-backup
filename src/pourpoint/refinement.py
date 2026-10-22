@@ -7,8 +7,8 @@ source contributions partition that same geometry at original unit boundaries.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from math import floor
 from typing import Literal, cast, overload
 
@@ -76,6 +76,7 @@ class GranularRefinement:
     subbasins: list[SubbasinContribution]
     outlet_cell: OutletCell
     rasters: RefinementRasters
+    provenance: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -83,6 +84,7 @@ class FootprintRefinement:
     footprint: Polygon | MultiPolygon
     outlet_cell: OutletCell
     rasters: RefinementRasters
+    provenance: Mapping[str, object] = field(default_factory=dict)
 
 
 type BasinPart = Subbasin | SubbasinContribution
@@ -170,7 +172,7 @@ def _refine(
     if (subbasins is None) == (footprint is None):
         raise ValueError("provide exactly one of subbasins or footprint")
     if not isinstance(target, Point) or target.is_empty:
-        raise ValueError("refinement target must be a nonempty Point")
+        raise OperationError("refinement.point_required", "refinement requires a nonempty point target")
     combined = merge(subbasins=subbasins) if subbasins is not None else footprint
     if not isinstance(combined, (Polygon, MultiPolygon)) or combined.is_empty:
         raise OperationError("refinement.empty_mask", "refinement requires a nonempty polygon mask")
@@ -216,13 +218,13 @@ def _refine(
     cell = OutletCell(request.grid, row + request.row, col + request.col)
     rasters = RefinementRasters(RasterSubset(window, mask, "direction"), RasterSubset(window, mask, "accumulation"))
     if subbasins is None:
-        return FootprintRefinement(geometry, cell, rasters)
+        return FootprintRefinement(geometry, cell, rasters, fabric.manifest.declarations)
     contributions = []
     for source in subbasins:
         piece = _polygonal(geometry.intersection(source.geometry))
         if not piece.is_empty:
             contributions.append(SubbasinContribution(source, piece))
-    return GranularRefinement(contributions, cell, rasters)
+    return GranularRefinement(contributions, cell, rasters, fabric.manifest.declarations)
 
 
 @overload

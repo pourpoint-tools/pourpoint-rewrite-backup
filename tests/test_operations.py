@@ -203,3 +203,67 @@ def test_refined_named_batch_exports_one_pair_per_target(tmp_path: Path, monkeyp
     with sqlite3.connect(folder / "vectors.gpkg") as db:
         names = db.execute("SELECT DISTINCT target_name FROM layer_0").fetchall()
         assert names == [("upper",)]
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_refinement_batch_isolates_empty_point(tmp_path: Path, n_jobs: int) -> None:
+    import json
+
+    import numpy as np
+    from conftest import add_pair
+    from rasterio.transform import from_origin
+
+    from pourpoint import refine
+
+    source = make_spatial_bundle(tmp_path / "source")
+    manifest_path = source / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["auxiliary"] = []
+    manifest_path.write_text(json.dumps(manifest))
+    add_pair(
+        source,
+        direction=np.array([[0]], dtype="uint8"),
+        accumulation=np.array([[1]], dtype="int32"),
+        transform=from_origin(1, 1.25, 0.25, 0.25),
+    )
+    with HydroFabric(source, cache=False) as fabric:
+        selection = select_upstream_subbasins(
+            fabric=fabric, target={"empty": Point(), "station": Point(1.125, 1.125)}, n_jobs=n_jobs
+        )
+        result = refine(fabric=fabric, subbasins=selection, window_size=1, n_jobs=n_jobs)
+        assert result.targets is selection.targets
+        assert result.results[0] is None
+        successful = result.results[1]
+        assert successful is not None
+        assert successful.subbasins[0].id == 10
+        assert successful.subbasins[0].geometry.equals(box(1, 1, 1.25, 1.25))
+        assert [(issue.index, issue.name, issue.code) for issue in result.issues] == [
+            (0, "empty", "refinement.point_required")
+        ]
+        with pytest.raises(ValueError, match="window_size"):
+            refine(fabric=fabric, subbasins=selection, window_size=2, n_jobs=n_jobs)
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_snapping_delineation_batch_isolates_empty_point(tmp_path: Path, n_jobs: int) -> None:
+    from shapely.geometry import LineString
+
+    from pourpoint import delineate
+
+    with HydroFabric(make_spatial_bundle(tmp_path / "source"), cache=False) as fabric:
+        targets = {"empty": Point(), "station": Point(1.125, 1.125)}
+        stream = LineString([(1, 1), (1.25, 1.25)])
+        result = delineate(fabric=fabric, target=targets, snap_onto=stream, n_jobs=n_jobs)
+        assert [target.name for target in result.targets] == ["empty", "station"]
+        assert result.results[0] is None
+        successful = result.results[1]
+        assert successful is not None
+        assert [unit.id for unit in successful.subbasins] == [10]
+        assert successful.target.equals(targets["station"])
+        assert [(issue.index, issue.name, issue.code) for issue in result.issues] == [
+            (0, "empty", "snap.point_required")
+        ]
+        with pytest.raises(ValueError, match="radius"):
+            delineate(fabric=fabric, target=targets, snap_onto=stream, radius=-1, n_jobs=n_jobs)
+        with pytest.raises(ValueError, match="stream line geometry"):
+            delineate(fabric=fabric, target=targets, snap_onto=box(1, 1, 1.25, 1.25), n_jobs=n_jobs)
