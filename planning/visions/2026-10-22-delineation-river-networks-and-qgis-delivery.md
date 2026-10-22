@@ -4,7 +4,7 @@
 
 Implement the hydrological operations and portable QGIS delivery on the merged HFX 0.4.0 reader/runtime. Users can select upstream sub-basins for a geometry, refine a point watershed on the raster grid, select rivers, and export named single or batch results without assembling an internal pipeline.
 
-This is a standalone implementation handoff, building on the [API design discussion #35](https://github.com/pourpoint-tools/pourpoint/issues/35), its [API vision](2026-10-20-python-api-and-qgis-workflows.md), and the [implemented reader/runtime vision](2026-10-20-hfx-reader-and-runtime-redesign.md). Issue #35 already completed API documentation; this work neither reopens nor designates completion of that issue. Publishing this document does not implement the engine or complete other Program work.
+This implementation handoff records the [backend design discussion #42](https://github.com/pourpoint-tools/pourpoint/issues/42), building on the [API design discussion #35](https://github.com/pourpoint-tools/pourpoint/issues/35), its [API vision](2026-10-20-python-api-and-qgis-workflows.md), and the [implemented reader/runtime vision](2026-10-20-hfx-reader-and-runtime-redesign.md). Issue #35 already completed API documentation; this work does not reopen it. Publishing this document does not complete #42, implement the engine or complete other Program work.
 
 The API vision has been updated in place with the agreed public surface. This backend handoff references it rather than defining competing signatures or result types. Publication is documentation only; implementation begins through a separate implementation invocation.
 
