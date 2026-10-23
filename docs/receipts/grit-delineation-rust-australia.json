@@ -1,0 +1,110 @@
+{
+  "stack": "rust",
+  "source": "https://basin-delineations-public.upstream.tech/grit/hfx-v0.3.0/",
+  "target": {
+    "name": "australia",
+    "lon": 129.68070603166115,
+    "lat": -14.499044113531943,
+    "python_terminal_id": 22419854,
+    "source_namespace": "grit:1.0:SP:reach_catchments:reach_catchments__1",
+    "source_id": "560535490",
+    "expected_python_count": 2
+  },
+  "package": "0.4.0",
+  "python": "3.13.14 (main, Jul 23 2026, 14:48:16) [Clang 22.1.3 ]",
+  "machine": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "processor": "arm",
+  "command": [
+    "scripts/measure_delineation.py",
+    "--stack",
+    "rust",
+    "--target",
+    "docs/receipts/grit-delineation-targets.json",
+    "--name",
+    "australia",
+    "--cache",
+    "scratchpad/grit-benchmark/rust-australia",
+    "--report",
+    "scratchpad/grit-benchmark/rust-australia.json"
+  ],
+  "script_sha256": "3bf652bf2d4d7c596184e0cedcbe6c70e566f6bd6c5a0b812b51b2210a8491b5",
+  "validation": [
+    {
+      "ids": [
+        20736354,
+        20736363
+      ],
+      "terminal_unit_id": 20736363,
+      "resolution_method": "Snap { strategy: WeightFirst, snap_id: SnapId(18969258), distance_m: 14.795811795724877, weight: Weight(64.9557), mainstem_status: Some(Mainstem), candidates_considered: 4 }",
+      "refinement_seed_kind": "disabled",
+      "levels": [
+        1
+      ],
+      "count": 2,
+      "geometry_sha256": "40174c2408de7378c073fb06e6e6e3711c43e3dcc59758858cd576da3d91839a",
+      "bounds": [
+        129.6757258870219,
+        -14.52135282690627,
+        129.76750221588176,
+        -14.42856549151232
+      ]
+    },
+    {
+      "terminal_unit_id": 20736363,
+      "resolution_method": "Snap { strategy: WeightFirst, snap_id: SnapId(18969258), distance_m: 14.795811795724877, weight: Weight(64.9557), mainstem_status: Some(Mainstem), candidates_considered: 4 }",
+      "refinement_seed_kind": "disabled",
+      "levels": [
+        1
+      ],
+      "count": 2,
+      "geometry_sha256": "40174c2408de7378c073fb06e6e6e3711c43e3dcc59758858cd576da3d91839a",
+      "bounds": [
+        129.6757258870219,
+        -14.52135282690627,
+        129.76750221588176,
+        -14.42856549151232
+      ]
+    },
+    {
+      "terminal_unit_id": 20736363,
+      "resolution_method": "Snap { strategy: WeightFirst, snap_id: SnapId(18969258), distance_m: 14.795811795724877, weight: Weight(64.9557), mainstem_status: Some(Mainstem), candidates_considered: 4 }",
+      "refinement_seed_kind": "disabled",
+      "levels": [
+        1
+      ],
+      "count": 2,
+      "geometry_sha256": "40174c2408de7378c073fb06e6e6e3711c43e3dcc59758858cd576da3d91839a",
+      "bounds": [
+        129.6757258870219,
+        -14.52135282690627,
+        129.76750221588176,
+        -14.42856549151232
+      ]
+    },
+    {
+      "terminal_unit_id": 20736363,
+      "resolution_method": "Snap { strategy: WeightFirst, snap_id: SnapId(18969258), distance_m: 14.795811795724877, weight: Weight(64.9557), mainstem_status: Some(Mainstem), candidates_considered: 4 }",
+      "refinement_seed_kind": "disabled",
+      "levels": [
+        1
+      ],
+      "count": 2,
+      "geometry_sha256": "40174c2408de7378c073fb06e6e6e3711c43e3dcc59758858cd576da3d91839a",
+      "bounds": [
+        129.6757258870219,
+        -14.52135282690627,
+        129.76750221588176,
+        -14.42856549151232
+      ]
+    }
+  ],
+  "status": "passed",
+  "opening_seconds": 0.38298491609748453,
+  "cold_total_seconds": 289.79288158309646,
+  "repeated_seconds": [
+    0.038025416899472475,
+    0.02380870806518942,
+    0.02234762499574572
+  ],
+  "manifest_sha256": "02339ff92cbfd1d2ea57bb5332cb843b98115cd7a7395f64c14fac78d2ed643c"
+}

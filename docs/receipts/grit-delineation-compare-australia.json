@@ -1,0 +1,29 @@
+{
+  "membership_equal": true,
+  "python_only": [],
+  "rust_only": [],
+  "outlet_source_equal": true,
+  "old_source_rows": [
+    {
+      "id": 20736354,
+      "level": 1,
+      "source_id": "reach:560535489"
+    },
+    {
+      "id": 20736363,
+      "level": 1,
+      "source_id": "reach:560535490"
+    }
+  ],
+  "python_holes": 0,
+  "rust_holes": 0,
+  "python_hole_area_degrees2": 0,
+  "hole_filled_python_difference_degrees2": 2.78866845181106e-09,
+  "rust_outlet_interior": true,
+  "footprints_exact": false,
+  "symmetric_difference_degrees2": 2.78866845181106e-09,
+  "relative_symmetric_difference": 6.088650035679741e-07,
+  "hausdorff_degrees": 1.293942542532799e-08,
+  "python_area_degrees2": 0.004580108212596441,
+  "rust_area_degrees2": 0.004580108211431981
+}
