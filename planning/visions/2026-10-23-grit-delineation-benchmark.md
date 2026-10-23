@@ -1,9 +1,10 @@
 # GRIT delineation benchmark
 
-Determine whether the current Python implementation with HFX 0.4.0 completes
-unrefined GRIT watershed delineations as fast as the released Rust-backed
-implementation with HFX 0.3.0. This compares two complete engine/dataset stacks,
-not Python and Rust language performance in isolation.
+Get a practical impression of performance and flag major regressions in the
+Python rewrite, comparing unrefined GRIT watershed delineation with HFX 0.4.0
+against the released Rust-backed implementation with HFX 0.3.0. This is a small
+regression screen, not strict equivalence certification or a language benchmark: it
+compares two complete engine/dataset stacks.
 
 This vision defines the work to complete [#47](https://github.com/pourpoint-tools/pourpoint/issues/47).
 Publishing the vision does not complete the issue. Return the benchmark findings
@@ -15,12 +16,13 @@ Use separate environments because both packages import as `pourpoint`:
 
 - Rust baseline: install the published `pourpoint==0.4.0` with `uv`. This is the
   **package version**, supporting **HFX 0.3.0**. Use `pourpoint.Engine(source,
-  refine=False)` followed by `engine.delineate(lon=lon, lat=lat, geometry=True)`.
+  refine=False, snap_radius=1000)` followed by `engine.delineate(lon=lon, lat=lat, geometry=True)`.
   Standard delineation already merges the watershed geometry.
 - Python baseline: use this repository through its `uv` environment. Open
   `HydroFabric(source, cache_dir=...)`, then call
-  `delineate(fabric=fabric, target=Point(lon, lat), refine=False, merge=True)`.
-  Select the matching catchment tier explicitly where needed.
+  `delineate(fabric=fabric, target=Point(lon, lat), snap_onto=rivers,
+  radius=1000, refine=False, merge=True)`. Supply local river candidates covering
+  the full search radius. Select matching catchment and river tiers explicitly.
 
 Use the hosted GRIT roots:
 
@@ -35,27 +37,31 @@ and uses an obsolete hosted alias; do not reuse its defaults blindly.
 
 ## Measure completed work
 
-Time upstream catchment selection, geometry retrieval, and the completed merged
-watershed. Disable refinement. Exclude export, river selection, and snapping;
-choose interior targets whose equivalent outlet selection can be verified in
-both public APIs. If the released API cannot meet that comparison, report the
-limitation rather than silently changing the measured operation.
+Time native snapping, upstream catchment selection, geometry retrieval, and the
+completed merged watershed. Use an explicit **1,000 metre** snap radius in both
+APIs and disable refinement. Include Python river-candidate acquisition and
+materialization inside timed work, rather than preparing those inputs for free.
+Exclude export and separate downstream river-selection operations. Use the same
+input coordinates in both stacks; disclose API limitations rather than silently
+changing the measured operation.
 
 Measure two conditions:
 
 1. **Cold start:** fresh application caches, timing engine/fabric opening through
    the first complete result. Report opening separately as well as total time to
    result; initialization deferred until delineation remains inside the total.
-2. **Repeated cache-hit use:** repeat the query in the same open engine/fabric,
-   excluding opening. Verify and describe actual cache reuse; repeated calls do
-   not by themselves prove every required read hits cache.
+2. **Repeated use:** repeat the query in the same open engine/fabric, excluding
+   opening. Describe observed cache reuse and available evidence; repeated calls
+   do not by themselves prove every required read hits cache. Missing complete
+   Rust cache telemetry must not block useful repeated-use timings: disclose the
+   observability limit and do not label unverified runs as all-cache-hit.
 
 Imports are outside timing. A fresh application cache does not imply a cold OS
 or CDN cache. Keep result validation outside timed work. Do not compare traced
 Rust calls with untraced Python calls or include dependency installation/builds.
 
 Use a small fixed general-baseline set spanning small, medium, and large upstream
-catchment counts across several regions. Run targets sequentially. Target
+catchment counts across three regions. Run targets sequentially. Target
 selection, repetition counts, and cache isolation mechanics are implementation
 choices; five repeats in the discussion was illustrative, not a requirement.
 Avoid competing benchmark jobs and record relevant machine/network limitations.
@@ -70,11 +76,16 @@ level, hence reach catchments. The current spatial HFX 0.4.0 publication has
 from GRIT v1.0, but normalization differs; identical numeric IDs or level labels
 are not sufficient evidence of equivalent work.
 
-Match source catchments, tiers, outlet selection, upstream membership, and merged
-footprints. Account for geometry cleaning differences and explain any numerical
-comparison tolerance. Do not treat Rust output as an unquestionable oracle or
-report a faster but materially different watershed as a comparable success.
-Report failures and unmatched targets rather than hiding them in aggregate timing.
+Check source catchments, tiers, selected outlets, upstream source membership, and
+merged footprints enough to detect materially different basins. Native snapping
+is deliberately retained: Rust ranks by weight/mainstem first, while Python picks
+the nearest candidate. Rust associates the selected river feature with a unit;
+Python uses snapped-coordinate containment. Record resulting differences rather
+than force either stack to imitate the other. Account for geometry cleaning and
+explain any numerical tolerance, without requiring exact membership or geometry
+equality to report a useful impression. Do not treat Rust as an unquestionable
+oracle or sell a faster but materially different watershed as a speedup. Report
+failures and unmatched targets separately, not hidden in aggregate timing.
 
 Use the current [operation conventions](../../docs/operations.md) and HFX's
 [final GRIT delivery evidence](https://github.com/pourpoint-tools/hfx/blob/main/docs/v0.4.0/grit-final-delivery.md).
@@ -93,7 +104,8 @@ slower; do not hide differences behind one aggregate winner.
 
 Keep the implementation proportionate and use project-native tools. No general
 benchmark framework, dataset recompilation, exhaustive global audit, production
-optimization, or new public API is required. Success is a reproducible, validated
-comparison with honest limits, regardless of which stack wins. If equivalence or
-cache-hit conditions cannot be established, retain the evidence and identify the
-blocked comparison rather than claim the speed question is answered.
+changes, optimization, or new public API is required. Success is a reproducible
+major-regression screen with honest limits, regardless of which stack wins.
+Distinguish timing observations from comparable-basin speed conclusions. Preserve
+useful timings even where comparability or cache evidence is incomplete, and
+state which conclusions those limits prevent.
