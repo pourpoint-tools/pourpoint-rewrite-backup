@@ -174,3 +174,17 @@ def test_snap_rejects_unwrapped_antimeridian_segment() -> None:
 
     with pytest.raises(ValueError, match="antimeridian"):
         snap(target=Point(180, 0), onto=LineString([(179, 0), (-179, 0)]), radius=200_000)
+
+
+def test_snap_endpoint_ties_and_late_validation() -> None:
+    from shapely.geometry import MultiLineString
+
+    from pourpoint.rivers import snap
+
+    target = Point(0, 0)
+    for x in (1, -1):
+        lines = MultiLineString([[(x, 0), (2 * x, 0)], [(-x, 0), (-2 * x, 0)]])
+        assert snap(target=target, onto=lines, radius=120_000).equals(Point(x, 0))
+    assert snap(target=target, onto=LineString([(1, 0), (1, 0)]), radius=120_000).equals(Point(1, 0))
+    with pytest.raises(ValueError, match="antimeridian"):
+        snap(target=target, onto=MultiLineString([[(-1, 0), (1, 0)], [(179, 0), (-179, 0)]]), radius=0)
