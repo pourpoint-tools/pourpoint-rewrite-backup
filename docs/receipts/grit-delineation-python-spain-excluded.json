@@ -1,0 +1,126 @@
+{
+  "stack": "python",
+  "source": "https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/",
+  "target": {
+    "name": "spain",
+    "lon": 1.8321205596232226,
+    "lat": 41.60943405128843,
+    "python_terminal_id": 11251462,
+    "source_namespace": "grit:1.0:EU:reach_catchments:reach_catchments__1",
+    "source_id": "160501332",
+    "expected_python_count": 503
+  },
+  "package": "0.0.0.dev0",
+  "python": "3.13.14 (main, Jul 23 2026, 14:48:16) [Clang 22.1.3 ]",
+  "machine": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "processor": "arm",
+  "command": [
+    "scripts/measure_delineation.py",
+    "--stack",
+    "python",
+    "--target",
+    "docs/receipts/grit-delineation-targets.json",
+    "--name",
+    "spain",
+    "--cache",
+    "scratchpad/grit-benchmark/python-spain",
+    "--report",
+    "scratchpad/grit-benchmark/python-spain.json"
+  ],
+  "script_sha256": "3bf652bf2d4d7c596184e0cedcbe6c70e566f6bd6c5a0b812b51b2210a8491b5",
+  "validation": [
+    {
+      "interior_outlets": [
+        11251462
+      ],
+      "levels": [
+        2
+      ],
+      "transfer_cumulative": {
+        "requests": 142,
+        "transferred_bytes": 22395526,
+        "cache_hit_bytes": 40869384
+      },
+      "count": 503,
+      "geometry_sha256": "4748f40d8172da73f0819696a7fb8d1dc3525b4ed6d13c4e734af71695d04fd7",
+      "bounds": [
+        1.4638074263078298,
+        41.57836788714781,
+        2.1943095291866817,
+        42.32000928141946
+      ]
+    },
+    {
+      "interior_outlets": [
+        11251462
+      ],
+      "levels": [
+        2
+      ],
+      "transfer_cumulative": {
+        "requests": 142,
+        "transferred_bytes": 22395526,
+        "cache_hit_bytes": 62906802
+      },
+      "count": 503,
+      "geometry_sha256": "4748f40d8172da73f0819696a7fb8d1dc3525b4ed6d13c4e734af71695d04fd7",
+      "bounds": [
+        1.4638074263078298,
+        41.57836788714781,
+        2.1943095291866817,
+        42.32000928141946
+      ]
+    },
+    {
+      "interior_outlets": [
+        11251462
+      ],
+      "levels": [
+        2
+      ],
+      "transfer_cumulative": {
+        "requests": 142,
+        "transferred_bytes": 22395526,
+        "cache_hit_bytes": 84944220
+      },
+      "count": 503,
+      "geometry_sha256": "4748f40d8172da73f0819696a7fb8d1dc3525b4ed6d13c4e734af71695d04fd7",
+      "bounds": [
+        1.4638074263078298,
+        41.57836788714781,
+        2.1943095291866817,
+        42.32000928141946
+      ]
+    },
+    {
+      "interior_outlets": [
+        11251462
+      ],
+      "levels": [
+        2
+      ],
+      "transfer_cumulative": {
+        "requests": 142,
+        "transferred_bytes": 22395526,
+        "cache_hit_bytes": 106981638
+      },
+      "count": 503,
+      "geometry_sha256": "4748f40d8172da73f0819696a7fb8d1dc3525b4ed6d13c4e734af71695d04fd7",
+      "bounds": [
+        1.4638074263078298,
+        41.57836788714781,
+        2.1943095291866817,
+        42.32000928141946
+      ]
+    }
+  ],
+  "status": "passed",
+  "opening_seconds": 0.39127754094079137,
+  "cold_total_seconds": 38.17885204101913,
+  "repeated_seconds": [
+    0.11652083299122751,
+    0.11042512499261647,
+    0.10973279201425612
+  ],
+  "excluded_reason": "Full test suite overlapped initial acquisition; excluded from summary, rerun with fresh application cache."
+}

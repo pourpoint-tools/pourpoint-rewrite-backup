@@ -1,0 +1,41 @@
+{
+  "stack": "python",
+  "source": "https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/",
+  "target": {
+    "name": "spain",
+    "lon": 1.8321205596232226,
+    "lat": 41.60943405128843,
+    "python_terminal_id": 11251462,
+    "source_namespace": "grit:1.0:EU:reach_catchments:reach_catchments__1",
+    "source_id": "160501332",
+    "expected_python_count": 503
+  },
+  "package": "0.0.0.dev0",
+  "snap_radius_m": 1000,
+  "python_candidate_bbox": [
+    1.8077963411187894,
+    41.591252233106616,
+    1.8564447781276558,
+    41.62761586947025
+  ],
+  "python": "3.13.14 (main, Jul 23 2026, 14:48:16) [Clang 22.1.3 ]",
+  "machine": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "processor": "arm",
+  "command": [
+    "scripts/measure_delineation.py",
+    "--stack",
+    "python",
+    "--target",
+    "docs/receipts/grit-delineation-targets.json",
+    "--name",
+    "spain",
+    "--cache",
+    "scratchpad/grit-benchmark/python-spain-snap",
+    "--report",
+    "scratchpad/grit-benchmark/python-spain-snap.json"
+  ],
+  "script_sha256": "edec768ee8ca4395dec5e3446c16d456fae291ba122b6c8d8435a4d40f09c0be",
+  "validation": [],
+  "status": "failed",
+  "error": "OperationError('No supplied stream is in range')"
+}

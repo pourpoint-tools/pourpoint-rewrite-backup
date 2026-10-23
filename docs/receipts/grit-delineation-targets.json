@@ -1,0 +1,38 @@
+[
+  {
+    "name": "australia",
+    "lon": 129.68070603166115,
+    "lat": -14.499044113531943,
+    "python_terminal_id": 22419854,
+    "source_namespace": "grit:1.0:SP:reach_catchments:reach_catchments__1",
+    "source_id": "560535490",
+    "expected_python_count": 2
+  },
+  {
+    "name": "amazon",
+    "lon": -62.679340648707104,
+    "lat": -7.6237734923991605,
+    "python_terminal_id": 16205129,
+    "source_namespace": "grit:1.0:SA:reach_catchments:reach_catchments__1",
+    "source_id": "407494",
+    "expected_python_count": 135
+  },
+  {
+    "name": "spain",
+    "lon": 1.8321205596232226,
+    "lat": 41.60943405128843,
+    "python_terminal_id": 11251462,
+    "source_namespace": "grit:1.0:EU:reach_catchments:reach_catchments__1",
+    "source_id": "160501332",
+    "expected_python_count": 503
+  },
+  {
+    "name": "spain-river",
+    "lon": 1.8471187023764186,
+    "lat": 41.61278477015954,
+    "python_terminal_id": 11251462,
+    "source_namespace": "grit:1.0:EU:reach_catchments:reach_catchments__1",
+    "source_id": "160501332",
+    "expected_python_count": 503
+  }
+]
