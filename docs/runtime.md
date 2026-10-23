@@ -113,8 +113,10 @@ fsspec async scheduling, avoiding a second authentication/integrity path.
 
 `stats` reports source requests (including HEAD), response payload bytes and disk
 cache-hit bytes, shared with external rasters. It is not wire traffic.
-`buffer_bytes` reports retained serialized source buffers and estimated adjacency
-storage, not process RSS, Arrow/GDAL metadata, query results or geometry allocations.
+`buffer_bytes` reports retained serialized source buffers, spatial statistics arrays
+and estimated adjacency storage, not process RSS, Arrow/GDAL metadata, query results
+or geometry allocations. Spatial arrays are prepared on the first candidate query
+per domain and retain 50 bytes per Parquet row group; ID-only reads do not prepare them.
 Public end-to-end evidence documents measured scope and limitations separately.
 
 ## Draft-reader compatibility

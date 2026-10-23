@@ -12,7 +12,7 @@ import pyarrow as pa
 
 from pourpoint._selection import compact_dictionaries
 from pourpoint.metadata import Bounds, SpatialManifest
-from pourpoint.spatial import candidate_groups, conservative_bounds, overlap
+from pourpoint.spatial import RowGroupBounds, conservative_bounds, overlap
 from pourpoint.storage import Source
 
 
@@ -142,6 +142,7 @@ class VectorReader:
             "id", pa.int64(), False
         ):
             raise ValueError("feature ID schema mismatch")
+        self._bounds: RowGroupBounds | None = None
         self._lookup: _IndexedIPC | None = None
         self._relationships: _IndexedIPC | None = None
         self._adjacency: OrderedDict[tuple[str, int], tuple[int, ...]] = OrderedDict()
@@ -149,8 +150,8 @@ class VectorReader:
 
     @property
     def buffer_bytes(self) -> int:
-        """Estimated retained adjacency storage, excluding native reader metadata and source buffers."""
-        return self._adjacency_bytes
+        """Retained spatial arrays and estimated adjacency storage, excluding native metadata."""
+        return self._adjacency_bytes + (0 if self._bounds is None else self._bounds.buffer_bytes)
 
     def records(self, ids: Iterable[int], columns: Sequence[str] | None = None) -> pa.Table:
         requested = _ids(ids)
@@ -218,10 +219,12 @@ class VectorReader:
         if tiers is not None and any(type(v) is not int or v < 0 for v in tiers):
             raise ValueError("levels must be nonnegative integers")
         self.source.check_artifact(self.family.data)
+        if self._bounds is None:
+            self._bounds = RowGroupBounds(self._file)
         discovery = [n for n in ("id", "level", "bbox") if n in self.schema.names]
         addresses: dict[int, list[tuple[int, int, int]]] = {}
         position = 0
-        for group in candidate_groups(self._file, envelope, levels=tiers):
+        for group in self._bounds.candidate_groups(envelope, levels=tiers):
             self.source.prefetch_parquet(self.family.data, self.manifest.artifacts[self.family.data], group, discovery)
             table = self._file.read_row_group(group, columns=discovery, use_threads=False)
             mask = overlap(table, envelope)

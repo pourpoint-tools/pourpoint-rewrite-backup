@@ -185,6 +185,7 @@ def snap(*, target: BaseGeometry, onto: SnapGeometry, radius: float) -> Point:
             if any(abs(a[0] - b[0]) >= 180 for a, b in zip(coordinates, coordinates[1:], strict=False)):
                 raise ValueError("split antimeridian-spanning stream segments before snapping")
     geod = Geod(ellps="WGS84")
+    target_x, target_y = target.x, target.y
     best_distance = float("inf")
     best: Point | None = None
     ratio = (sqrt(5) - 1) / 2
@@ -198,9 +199,13 @@ def snap(*, target: BaseGeometry, onto: SnapGeometry, radius: float) -> Point:
                 def point(t: float, start: tuple[float, ...] = start, end: tuple[float, ...] = end) -> Point:
                     return Point(start[0] + t * (end[0] - start[0]), start[1] + t * (end[1] - start[1]))
 
-                def distance(t: float) -> float:
-                    p = point(t)
-                    return geod.inv(target.x, target.y, p.x, p.y)[2]
+                def distance(t: float, start: tuple[float, ...] = start, end: tuple[float, ...] = end) -> float:
+                    return geod.inv(
+                        target_x,
+                        target_y,
+                        start[0] + t * (end[0] - start[0]),
+                        start[1] + t * (end[1] - start[1]),
+                    )[2]
 
                 low, high = 0.0, 1.0
                 for _ in range(64):
