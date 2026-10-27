@@ -1,0 +1,52 @@
+name: Documentation
+on:
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
+permissions:
+  contents: read
+concurrency:
+  group: documentation-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.sha }}
+          persist-credentials: false
+      - name: Read exact HFX revision
+        id: hfx
+        run: echo "revision=$(cat docs/hfx-revision)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: pourpoint-tools/hfx
+          ref: ${{ steps.hfx.outputs.revision }}
+          path: .worktrees/hfx-docs
+          token: ${{ secrets.HFX_DOCS_READ_TOKEN }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Build pinned documentation
+        run: uv run --frozen --group docs python scripts/build_docs.py --hfx-source .worktrees/hfx-docs
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'release'
+        with:
+          name: documentation-${{ github.sha }}
+          path: .docs-build/site
+          include-hidden-files: true
+      - uses: actions/checkout@v4
+        if: github.event_name == 'release'
+        with:
+          repository: pourpoint-tools/pourpoint-tools.github.io
+          path: .worktrees/generated-site
+          token: ${{ secrets.DOCS_SITE_WRITE_TOKEN }}
+      - name: Retain release output; publish only after explicit approval
+        if: github.event_name == 'release'
+        env:
+          DOCS_PUBLICATION_ENABLED: ${{ vars.DOCS_PUBLICATION_ENABLED }}
+        run: uv run --frozen python scripts/publish_docs.py --repository .worktrees/generated-site

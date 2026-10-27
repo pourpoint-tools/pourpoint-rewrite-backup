@@ -33,6 +33,10 @@ dev = [
     "ty>=0.0.35",
     "uv-build>=0.12.1,<0.13",
 ]
+docs = [
+    "mkdocs-material>=9.6",
+    "mkdocstrings[python]>=0.30",
+]
 
 [tool.ruff]
 line-length = 120
