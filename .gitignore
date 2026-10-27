@@ -22,3 +22,4 @@ credentials/
 *.pem
 *.key
 .DS_Store
+.docs-build/

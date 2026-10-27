@@ -5,7 +5,7 @@
 Pourpoint is a Python watershed-delineation engine consuming compiled HFX datasets.
 The reader/runtime foundation supports functional hydrological operations and
 portable QGIS delivery.
-Use `../hfx/docs/v0.4.0/vector-data.md` as the canonical input contract. Keep source-fabric
+Use `../hfx/docs/site/index.md` as the canonical input contract. Keep source-fabric
 normalization outside the engine rather than inventing a parallel HFX contract.
 
 The Rust comparison baseline is `CooperBigFoot/pourpoint` commit

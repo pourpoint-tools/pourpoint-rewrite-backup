@@ -1,31 +1,26 @@
-# pourpoint
+# Pourpoint
 
-Private workspace for a fresh Python rewrite of pourpoint, a watershed
-delineation engine consuming [HFX](https://github.com/CooperBigFoot/hfx)
-datasets. Functional upstream selection, raster refinement, river selection and
-portable QGIS export use the final HFX 0.4.0 spatial reader and runtime.
-See [hydrological operations](docs/operations.md) for usage and conventions.
+Pourpoint is a Python watershed-delineation engine consuming compiled
+[HFX datasets](https://github.com/pourpoint-tools/hfx/blob/main/docs/site/index.md).
+It selects upstream sub-basins, refines point watersheds on native D8 grids,
+selects river networks and writes portable QGIS projects.
 
-## Reader and runtime
+## Setup
 
-```python
-from pourpoint import HydroFabric
+Use Python 3.13 or newer and [uv](https://docs.astral.sh/uv/). In an authorized checkout:
 
-with HydroFabric("https://basin-delineations-public.upstream.tech/grit/hfx-v0.4.0/", cache_dir="./hfx-cache") as fabric:
-    ids = fabric.traverse("catchments", [1284709])
-    subbasins = fabric.subbasins(ids)
-    attributes = fabric.records("rivers", [1], columns=["id", "source_strahler_order"])
+```bash
+uv sync
 ```
 
-See [runtime access](docs/runtime.md) for costs, candidate APIs, integrity and lifetime.
-[Native-grid raster access](docs/rasters.md) supplies prepared paired direction and
-accumulation windows for whole-footprint refinement.
-GRIT source data carry CC BY-NC 4.0 terms and attribution in their bundle; this
-repository's code license does not replace source-data terms.
+Start with [installation and setup](docs/site/getting-started.md),
+[hydrological concepts](docs/site/concepts.md) and [operation conventions](docs/site/operations.md).
+The [documentation source](docs/site/index.md) and
+[build instructions](docs/building.md) include the curated, docstring-generated API reference.
+The eventual site address is https://pourpoint-tools.github.io/; it is not publicly
+published during private development.
 
 ## Development
-
-Use Python 3.13 and [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv sync --group dev
@@ -36,29 +31,16 @@ uv run ty check src
 uv build
 ```
 
-See [AGENTS.md](AGENTS.md) for development conventions. The local package version
-`0.0.0.dev0` is a setup placeholder, not a release plan. No package publishing or
-CI is configured.
+See [AGENTS.md](AGENTS.md) for conventions. The canonical input contract is the
+[HFX specification](https://github.com/pourpoint-tools/hfx/blob/main/docs/site/index.md).
 
-## Rust reference
-
-The previous implementation remains in
-[CooperBigFoot/pourpoint](https://github.com/CooperBigFoot/pourpoint).
-Use commit [`60e3d6e383546ea6ed20e68fe4d77959c816a48c`](https://github.com/CooperBigFoot/pourpoint/tree/60e3d6e383546ea6ed20e68fe4d77959c816a48c)
-as the stable comparison baseline. Its source, tests, and fixtures are evidence,
-not a requirement to preserve every behavior or design choice.
-
-This repository does not copy the Rust Git history. In a checkout of the old
-repository, inspect a file with:
-
-```bash
-git show 60e3d6e383546ea6ed20e68fe4d77959c816a48c:crates/core/src/engine.rs
-```
-
-The canonical input contract is the
-[HFX 0.4.0 vector contract](https://github.com/pourpoint-tools/hfx/blob/main/docs/v0.4.0/vector-data.md),
-also available locally at `../hfx/docs/v0.4.0/vector-data.md` when using sibling checkouts.
+The Rust comparison baseline is
+[CooperBigFoot/pourpoint at `60e3d6e383546ea6ed20e68fe4d77959c816a48c`](https://github.com/CooperBigFoot/pourpoint/tree/60e3d6e383546ea6ed20e68fe4d77959c816a48c).
+Its history is not copied here. In a checkout of that repository, inspect it with
+`git show 60e3d6e383546ea6ed20e68fe4d77959c816a48c:crates/core/src/engine.rs`.
+Treat previous behavior as evidence to investigate, not a requirement.
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE). Source-data terms remain separate; GRIT data carry CC BY-NC 4.0
+terms, attribution and source caveats.
