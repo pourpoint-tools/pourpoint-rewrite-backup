@@ -121,15 +121,20 @@ def select_rivers(
         Selected portions with original identities, attributes, directed
         relationships and supplied nodes. Source quantities are not recomputed.
         Empty footprints or no intersecting rivers give an empty network when
-        the river family is supplied. Materialized results survive closure.
+        the river family and its relationship data are supplied. Materialized
+        results survive closure.
 
     Raises
     ------
     OperationError
         ``rivers.unavailable`` when the river family is absent;
-        ``rivers.connectivity_unavailable`` when extension needs unsupplied
-        downstream connectivity; ``rivers.ambiguous_direction`` when a partial
+        ``rivers.connectivity_unavailable`` when extension needs a missing
+        ``downstream_ids`` column in supplied relationship data;
+        ``rivers.ambiguous_direction`` when a partial
         feature cannot be oriented from supplied orientation or endpoint nodes.
+    KeyError
+        River relationship data are not declared, even for an empty footprint
+        or no matching rivers. Missing referenced source IDs also raise.
     ValueError
         Invalid level, nonpolygonal nonempty footprint, or downstream flow
         crossing river levels. Integrity errors propagate rather than producing

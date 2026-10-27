@@ -242,8 +242,13 @@ class HydroFabric:
 
         River order and duplicates follow ``ids``; referenced nodes are unique
         and sorted by ID. Relationships retain references to unselected rivers.
-        Missing IDs raise ``KeyError`` rather than dropping features. No clipping,
-        traversal or inference of flow is performed.
+        No clipping, traversal or inference of flow is performed.
+
+        Raises
+        ------
+        KeyError
+            The river family or its relationship data are not supplied, even
+            for empty IDs, or a requested river or referenced node is missing.
         """
         table = self.records("rivers", ids)
         relations = self.relationships("rivers", ids)
