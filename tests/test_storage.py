@@ -122,29 +122,11 @@ def test_reject_bad_range(origin: tuple[str, OriginState], mode: str) -> None:
             stream.read(17)
 
 
-def test_graph_stream_and_corrupt_cache(origin: tuple[str, OriginState], tmp_path: Path) -> None:
-    url, state = origin
-    data = state["data"]
-    mark = fingerprint(data)
-    with Source(url, storage_options={"client_options": {"allow_http": True}}) as source:
-        cached = source.graph_path(tmp_path, "graph.parquet", mark)
-        assert cached.read_bytes() == data
-        assert state["requests"] == [(None, len(data), '"v1"', "identity")]
-        assert source.graph_path(tmp_path, "graph.parquet", mark) == cached
-        assert len(state["requests"]) == 1
-        cached.write_bytes(b"corrupt")
-        assert source.graph_path(tmp_path, "graph.parquet", mark).read_bytes() == data
-        assert len(state["requests"]) == 2
-        assert not list(tmp_path.rglob("*.part"))
-
-
-def test_local_json_digest_graph_original_and_safety(tmp_path: Path) -> None:
+def test_local_json_digest_and_path_safety(tmp_path: Path) -> None:
     data = b'{"value": 7}'
     (tmp_path / "manifest.json").write_bytes(data)
     with Source(tmp_path) as source:
         assert source.read_json("manifest.json", fingerprint(data)) == {"value": 7}
-        assert source.graph_path(tmp_path / "cache", "manifest.json", fingerprint(data)) == tmp_path / "manifest.json"
-        assert not (tmp_path / "cache").exists()
         with pytest.raises(ValueError, match="relative|escapes"):
             source.open_artifact("../escape", fingerprint(data))
     with Source(tmp_path) as source, pytest.raises(ValueError, match="SHA-256"):
@@ -167,11 +149,13 @@ def test_s3_configured_endpoint_and_source_isolation(origin: tuple[str, OriginSt
 
 
 @pytest.mark.parametrize("protocol", ["http", "s3"])
-def test_dataset_remote_fixture(origin: tuple[str, OriginState], hfx: Path, tmp_path: Path, protocol: str) -> None:
-    from pourpoint import Dataset
+def test_fabric_remote_fixture(
+    origin: tuple[str, OriginState], spatial_hfx: Path, tmp_path: Path, protocol: str
+) -> None:
+    from pourpoint import HydroFabric
 
     url, state = origin
-    state["files"] = {path.name: path.read_bytes() for path in hfx.iterdir() if path.is_file()}
+    state["files"] = {path.name: path.read_bytes() for path in spatial_hfx.iterdir() if path.is_file()}
     options = {"client_options": {"allow_http": True}}
     root = url
     if protocol == "s3":
@@ -182,11 +166,11 @@ def test_dataset_remote_fixture(origin: tuple[str, OriginState], hfx: Path, tmp_
             "access_key_id": "fixture",
             "secret_access_key": "fixture",
         }
-    with Dataset.open(root, storage_options=options, cache_dir=tmp_path / "download") as data:
-        assert set(data.upstream(40).ids) == {10, 20, 30, 40}
-        assert data.attributes([40, 10, 40])["id"].to_pylist() == [40, 10, 40]
-        assert data.polygons([10]).decode().ids.tolist() == [10]
-        assert data.snap_candidates("fine", (0.4, 0.4, 0.7, 0.6)).ids.tolist() == [101, 102]
+    with HydroFabric(root, storage_options=options, cache_dir=tmp_path / "download") as data:
+        assert set(data.traverse("catchments", [40])) == {10, 20, 30, 40}
+        assert data.records("catchments", [40, 10, 40])["id"].to_pylist() == [40, 10, 40]
+        assert [feature.id for feature in data.subbasins([10])] == [10]
+        assert data.candidates("rivers", (1, 1, 1.25, 1.25))["id"].to_pylist() == [10]
     assert state["requests"]
     assert all(item[2:] == ('"v1"', "identity") for item in state["requests"])
     assert all(signed == (protocol == "s3") for signed in state["signed"])
@@ -229,15 +213,6 @@ def test_arrow_adapters_read_selected_blocks(origin: tuple[str, OriginState], fo
         assert len(state["requests"]) <= 5
 
 
-def test_incomplete_graph_not_published(origin: tuple[str, OriginState], tmp_path: Path) -> None:
-    url, state = origin
-    state["mode"] = "short"
-    with Source(url, storage_options={"client_options": {"allow_http": True}}) as source, pytest.raises(ValueError):
-        source.graph_path(tmp_path, "graph", fingerprint(state["data"]))
-    assert not list(tmp_path.rglob("*.parquet"))
-    assert not list(tmp_path.rglob("*.part"))
-
-
 def test_bounded_digest_and_changed_local_file(tmp_path: Path) -> None:
     data = b"a" * 200000
     path = tmp_path / "file"
@@ -249,48 +224,6 @@ def test_bounded_digest_and_changed_local_file(tmp_path: Path) -> None:
         path.write_bytes(b"changed")
         with pytest.raises(ValueError, match="changed"):
             stream.read(1)
-
-
-def test_graph_identity_detects_mutation_without_rehash(tmp_path: Path) -> None:
-    data = b"original"
-    graph = tmp_path / "graph.parquet"
-    graph.write_bytes(data)
-    with Source(tmp_path) as source:
-        selected = source.graph_path(tmp_path / "cache", "graph.parquet", fingerprint(data))
-        source.check_graph(selected)
-        graph.write_bytes(b"modified")
-        with pytest.raises(ValueError, match="changed"):
-            source.check_graph(selected)
-
-
-def test_cached_graph_identity_detects_replacement(origin: tuple[str, OriginState], tmp_path: Path) -> None:
-    url, state = origin
-    with Source(url, storage_options={"client_options": {"allow_http": True}}) as source:
-        graph = source.graph_path(tmp_path, "graph", fingerprint(state["data"]))
-        source.check_graph(graph)
-        replacement = tmp_path / "replacement"
-        replacement.write_bytes(state["data"])
-        replacement.replace(graph)
-        with pytest.raises(ValueError, match="changed"):
-            source.check_graph(graph)
-
-
-def test_graph_change_during_verification_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from typing import BinaryIO
-
-    data = b"original"
-    graph = tmp_path / "graph.parquet"
-    graph.write_bytes(data)
-    original_digest = hashlib.file_digest
-
-    def changed_digest(stream: BinaryIO, algorithm: str) -> object:
-        digest = original_digest(stream, algorithm)
-        graph.write_bytes(b"modified-after-hash")
-        return digest
-
-    monkeypatch.setattr(hashlib, "file_digest", changed_digest)
-    with Source(tmp_path) as source, pytest.raises(ValueError, match="changed during verification"):
-        source.graph_path(tmp_path / "cache", "graph.parquet", fingerprint(data))
 
 
 def test_http_manifest_revalidation_and_snapshot(origin: tuple[str, OriginState]) -> None:
@@ -311,24 +244,26 @@ def test_http_manifest_revalidation_and_snapshot(origin: tuple[str, OriginState]
     "ignore:Exception ignored in.*rasterio._err.chaining_error_handler:pytest.PytestUnraisableExceptionWarning"
 )
 @pytest.mark.parametrize("protocol", ["http", "s3"])
-def test_raster_transport_pins_reuse_and_mutation(origin: tuple[str, OriginState], hfx: Path, protocol: str) -> None:
+def test_raster_transport_pins_reuse_and_mutation(
+    origin: tuple[str, OriginState], spatial_hfx: Path, protocol: str
+) -> None:
     import numpy as np
     from conftest import add_pair
     from rasterio.errors import RasterioIOError
     from rasterio.transform import from_origin
 
-    from pourpoint import Dataset
+    from pourpoint import HydroFabric
 
     # Uncompressed tiles ensure the later selection is outside opener readahead.
     add_pair(
-        hfx,
+        spatial_hfx,
         direction=np.full((1024, 1024), 8, dtype="uint8"),
         accumulation=np.full((1024, 1024), 16777217, dtype="int32"),
         transform=from_origin(0, 1024, 1, 1),
         crs="EPSG:3857",
     )
     url, state = origin
-    state["files"] = {path.name: path.read_bytes() for path in hfx.iterdir() if path.is_file()}
+    state["files"] = {path.name: path.read_bytes() for path in spatial_hfx.iterdir() if path.is_file()}
     options = {"client_options": {"allow_http": True}, "retry_config": {"max_retries": 0}}
     root = url
     if protocol == "s3":
@@ -339,7 +274,7 @@ def test_raster_transport_pins_reuse_and_mutation(origin: tuple[str, OriginState
             "access_key_id": "fixture",
             "secret_access_key": "fixture",
         }
-    with Dataset.open(root, storage_options=options) as data:
+    with HydroFabric(root, storage_options=options, cache=False) as data:
         request = data.rasters.prepare((0, 1023, 1, 1024), crs="EPSG:3857")
         result = data.rasters.read(request)
         assert result.accumulation[0, 0] == 16777217

@@ -1,15 +1,14 @@
-"""Typed HFX declarations. Auxiliary payloads remain metadata, not raster APIs."""
+"""Typed final-HFX publication declarations and artifact identities."""
 
 from __future__ import annotations
 
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
 from math import isfinite
 from pathlib import PurePosixPath
 from types import MappingProxyType
-from typing import Literal, cast
+from typing import cast
 from urllib.parse import unquote, urlsplit
 
 type Json = None | bool | int | float | str | list[Json] | dict[str, Json]
@@ -59,23 +58,20 @@ def _mapping(value: object, name: str) -> Mapping[str, object]:
 
 
 @dataclass(frozen=True)
-class Auxiliary:
-    schema: str
-    artifacts: Mapping[str, str]
-    metadata: Mapping[str, object]
-
-
-@dataclass(frozen=True)
-class SnapSet:
-    name: str
-    path: str
-    references_levels: tuple[int, ...]
-    description: str
-    weight_semantics: str
-
-
-@dataclass(frozen=True)
 class Fingerprint:
+    """Immutable artifact size and SHA-256 identities supplied by HFX.
+
+    Attributes
+    ----------
+    size_bytes
+        Complete artifact length in bytes.
+    sha256
+        Digest of the complete artifact; binds indexes and relationships to it.
+    head_sha256, tail_sha256
+        Digests of bounded leading and trailing byte windows used for selective
+        integrity checks. These checks do not verify every artifact byte.
+    """
+
     size_bytes: int
     sha256: str
     head_sha256: str
@@ -94,116 +90,21 @@ class Fingerprint:
 
 
 @dataclass(frozen=True)
-class Manifest:
-    graph: str
-    catchments: str
-    lookup: str
-    directory: str
-    source_manifest: str
-    artifacts: Mapping[str, Fingerprint]
-    fabric_name: str
-    unit_count: int
-    topology: Literal["tree", "dag"]
-    has_up_area: bool
-    bbox: Bounds
-    auxiliary: tuple[Auxiliary, ...]
-    snap_sets: Mapping[str, SnapSet]
-    declarations: Mapping[str, object]
-
-    @classmethod
-    def parse(cls, data: Mapping[str, object]) -> Manifest:
-        if data.get("format_version") != "0.4.0":
-            raise ValueError("manifest format_version: expected HFX 0.4.0")
-        if data.get("crs") != "EPSG:4326":
-            raise ValueError("manifest crs: expected EPSG:4326")
-        name = _string(data, "fabric_name")
-        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", name):
-            raise ValueError("manifest fabric_name must be lowercase ASCII without whitespace")
-        count = data.get("unit_count")
-        if type(count) is not int or not 0 < count <= 2**63 - 1:
-            raise ValueError("manifest unit_count must be a positive int64 integer")
-        topology = data.get("topology")
-        if topology not in ("tree", "dag"):
-            raise ValueError("manifest topology must be tree or dag")
-        has_up_area = data.get("has_up_area")
-        if type(has_up_area) is not bool:
-            raise ValueError("manifest has_up_area must be boolean")
-        created = _string(data, "created_at")
-        try:
-            stamp = datetime.fromisoformat(created.replace("Z", "+00:00"))
-            if stamp.tzinfo is None:
-                raise ValueError("missing timezone")
-        except ValueError as exc:
-            raise ValueError("manifest created_at must be an RFC3339 timestamp") from exc
-        _string(data, "adapter_version")
-        auxiliary: list[Auxiliary] = []
-        snaps: dict[str, SnapSet] = {}
-        entries = data.get("auxiliary")
-        if not isinstance(entries, list):
-            raise ValueError("manifest auxiliary must be an array")
-        for entry in entries:
-            item = _mapping(entry, "auxiliary")
-            schema = _string(item, "schema")
-            if not re.fullmatch(r"[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)+", schema):
-                raise ValueError("manifest auxiliary schema is invalid")
-            paths = _mapping(item.get("artifacts"), "artifacts")
-            if not paths or any(not k for k in paths):
-                raise ValueError("manifest artifacts must have nonempty keys")
-            artifacts = {key: artifact_path(value) for key, value in paths.items()}
-            metadata = _mapping(item.get("metadata"), "metadata")
-            auxiliary.append(Auxiliary(schema, MappingProxyType(artifacts), MappingProxyType(dict(metadata))))
-            if schema == "hfx.aux.snap.v2":
-                snap_name = _string(metadata, "name")
-                if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", snap_name) or snap_name in snaps:
-                    raise ValueError("manifest snap name must be unique kebab-case")
-                levels = metadata.get("references_levels")
-                if (
-                    not isinstance(levels, list)
-                    or not levels
-                    or any(type(v) is not int or not 0 <= v <= 32767 for v in levels)
-                ):
-                    raise ValueError("manifest references_levels must be nonempty nonnegative int16 levels")
-                if "snap" not in artifacts:
-                    raise ValueError("manifest snap artifact missing")
-                snaps[snap_name] = SnapSet(
-                    snap_name,
-                    artifacts["snap"],
-                    tuple(levels),
-                    _string(metadata, "description"),
-                    _string(metadata, "weight_semantics"),
-                )
-        paths = [
-            artifact_path(data.get(key)) for key in ("graph", "catchments", "lookup", "directory", "source_manifest")
-        ]
-        fingerprints = {
-            artifact_path(k): Fingerprint.parse(v) for k, v in _mapping(data.get("artifacts"), "artifacts").items()
-        }
-        for path in [*paths, *(p for entry in auxiliary for p in entry.artifacts.values())]:
-            if path not in fingerprints:
-                raise ValueError(f"manifest fingerprint missing: {path}")
-        for key, expected in (("index_batch_rows", 65536), ("catchment_batch_bytes", 8388608)):
-            if type(data.get(key)) is not int or data[key] != expected:
-                raise ValueError(f"manifest {key}: expected {expected}")
-        return cls(
-            paths[0],
-            paths[1],
-            paths[2],
-            paths[3],
-            paths[4],
-            MappingProxyType(fingerprints),
-            name,
-            count,
-            cast(Literal["tree", "dag"], topology),
-            has_up_area,
-            bounds(data.get("bbox")),
-            tuple(auxiliary),
-            MappingProxyType(snaps),
-            MappingProxyType(dict(data)),
-        )
-
-
-@dataclass(frozen=True)
 class DomainFamily:
+    """Published feature table and its ID/spatial addressing artifacts.
+
+    Attributes
+    ----------
+    data
+        Relative GeoParquet artifact path.
+    data_sha256
+        Complete feature artifact digest to which the indexes are bound.
+    count
+        Number of source features.
+    lookup, directory
+        Relative paths of the published ID lookup and spatial directory.
+    """
+
     data: str
     data_sha256: str
     count: int
@@ -213,7 +114,22 @@ class DomainFamily:
 
 @dataclass(frozen=True)
 class SpatialManifest:
-    """Final HFX publication declarations; unknown source metadata stays inspectable."""
+    """Final HFX publication declarations, including unchanged source metadata.
+
+    Attributes
+    ----------
+    families
+        Domain names mapped to their feature tables and addressing artifacts.
+    relationships
+        Supplied immediate relationship declarations by domain. Columns retain
+        their source meanings, target domains and artifact bindings; an absent
+        declaration does not establish a natural outlet.
+    artifacts
+        Relative artifact paths mapped to immutable size and digest declarations.
+    declarations
+        Complete source manifest, including provenance, raster declarations and
+        otherwise unrecognized metadata. No source attributes are standardized.
+    """
 
     families: Mapping[str, DomainFamily]
     relationships: Mapping[str, Mapping[str, object]]

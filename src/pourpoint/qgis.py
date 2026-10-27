@@ -105,7 +105,15 @@ def _initialize(db: sqlite3.Connection) -> None:
 
 
 class QGISBundle:
-    """Incremental export; write() creates a new folder and never replaces a path.
+    """Build a portable QGIS folder incrementally without hydrological computation.
+
+    Notes
+    -----
+    Add methods retain data and return this builder for chaining. `write` creates
+    a new folder with a relative-reference project, GeoPackage and native-grid
+    GeoTIFFs; it never replaces an existing path. No merging, delineation or river
+    tracing is performed implicitly. Perform source-dependent export inside the
+    fabric context; current raster subsets already contain materialized arrays.
 
     Scalar source fields become ordinary vector columns. Reserved-name collisions
     gain ``source_`` prefixes; ``source_metadata.attribute_columns`` records names.
@@ -129,6 +137,26 @@ class QGISBundle:
         *,
         crs: str | CRS | None = None,
     ) -> Self:
+        """Add one vector layer, retaining supplied source records.
+
+        Parameters
+        ----------
+        name
+            Display layer name. Storage table names are generated separately.
+        data
+            Raw geometry, feature, collection of features, or river network.
+            Networks also retain relationships, source nodes and declarations
+            in companion tables; individual feature identities are preserved.
+        crs
+            Required for raw geometry. Feature inputs default to EPSG:4326.
+            This assigns the CRS; it does not transform coordinates. Native
+            outlet-cell geometry must use its grid CRS explicitly.
+
+        Raises
+        ------
+        ValueError
+            Raw geometry has no explicit CRS.
+        """
         sources: list[VectorFeature]
         if isinstance(data, BaseGeometry):
             if crs is None:
@@ -147,10 +175,38 @@ class QGISBundle:
         return self
 
     def add_raster(self, name: str, data: RasterSubset) -> Self:
+        """Add a retained raster subset without reading or warping source data.
+
+        Parameters
+        ----------
+        name
+            Display layer name; a safe storage filename is generated on write.
+        data
+            Native-grid band and whole-vector mask. Write preserves valid source
+            values inside the mask and uses source nodata elsewhere, including
+            unrelated corners of the rectangular window.
+        """
         self._rasters.append((name, data, None))
         return self
 
     def add_result(self, result: ExportResult | BatchResult[ExportResult]) -> Self:
+        """Add available delineation or refinement outputs without computing more.
+
+        Parameters
+        ----------
+        result
+            A single result or its batch container. Each batch target gets its
+            named group and retained identity; failures go into ``target_issues``
+            without fabricated features. Available outputs include sub-basins,
+            merged footprint, outlined native-CRS outlet cell and one raster
+            pair per refined target. Overlapping targets may duplicate pixels.
+            Granular refinement is not silently merged into another layer.
+
+        Notes
+        -----
+        Original and vector-adjusted targets and provenance are retained in
+        ``result_metadata`` when available, not added as extra map layers.
+        """
         if isinstance(result, BatchResult):
             self._issues.extend(result.issues)
             for target, value in zip(result.targets, result.results, strict=True):
@@ -185,6 +241,34 @@ class QGISBundle:
             )
 
     def write(self, path: str | Path) -> Path:
+        """Write the accumulated layers to a new portable folder.
+
+        Parameters
+        ----------
+        path
+            New output directory. Missing parents are created.
+
+        Returns
+        -------
+        Path
+            Output folder containing ``watershed.qgz``, ``vectors.gpkg`` and
+            any ``raster_*.tif`` files. Project references are relative so the
+            entire folder can be moved together.
+
+        Raises
+        ------
+        FileExistsError
+            The destination already exists; it is never overwritten.
+        ValueError
+            A raster subset lacks retained source values or source nodata.
+
+        Notes
+        -----
+        Serializes retained arrays and vector records, with no hidden hydrological
+        operations. Cost scales with exported features and pixels, including
+        duplicated pixels across targets. Writes are not transactional across
+        the folder: a failure may leave partial files for the caller to remove.
+        """
         folder = Path(path)
         folder.mkdir(parents=True, exist_ok=False)
         project = ET.Element("qgis", version="3.40.0", projectname="Pourpoint")

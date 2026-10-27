@@ -15,8 +15,8 @@ from rasterio.transform import from_origin
 from test_storage import OriginState, fingerprint
 from test_storage import origin as origin
 
-from pourpoint import Dataset
-from pourpoint.metadata import Fingerprint, Manifest
+from pourpoint import HydroFabric
+from pourpoint.metadata import Fingerprint, SpatialManifest
 from pourpoint.rasters import RasterReader, normalize_direction
 from pourpoint.storage import Source
 
@@ -49,9 +49,9 @@ def test_invalid_consumed_direction(encoding: str, value: int) -> None:
         normalize_direction(np.array([[value]], dtype="uint8"), np.ones((1, 1), dtype=bool), encoding)
 
 
-def test_native_window_precision_masks_and_lifetime(hfx: Path) -> None:
-    add_pair(hfx)
-    with Dataset.open(hfx) as dataset:
+def test_native_window_precision_masks_and_lifetime(spatial_hfx: Path) -> None:
+    add_pair(spatial_hfx)
+    with HydroFabric(spatial_hfx, cache=False) as dataset:
         request = dataset.rasters.prepare((0.2, 0.2, 3.8, 1.8))
         assert (request.col, request.row, request.width, request.height) == (0, 0, 4, 2)
         with pytest.raises(FrozenInstanceError):
@@ -69,19 +69,18 @@ def test_native_window_precision_masks_and_lifetime(hfx: Path) -> None:
         later = dataset.rasters.read(request)
         later.direction[:] = 7
         later.accumulation[:] = 0
-        assert dataset._topology is None
+        assert not dataset._vectors
     assert result.direction[0, 0] == 1
     assert result.accumulation[0, 0] == 16777217
     with pytest.raises(RuntimeError, match="closed"):
         dataset.rasters.read(request)
 
 
-def test_raster_only_and_foreign_request(hfx: Path) -> None:
-    add_pair(hfx)
-    with Source(hfx) as source:
-        manifest = Manifest.parse(source.read_json("manifest.json"))
-        (hfx / "catchments.arrow").unlink()
-        (hfx / "graph.parquet").unlink()
+def test_raster_only_and_foreign_request(spatial_hfx: Path) -> None:
+    add_pair(spatial_hfx)
+    with Source(spatial_hfx) as source:
+        manifest = SpatialManifest.parse(source.read_json("manifest.json"))
+        (spatial_hfx / "catchments.parquet").unlink()
         with RasterReader(source, manifest) as first, RasterReader(source, manifest) as second:
             request = first.prepare((1, 0, 3, 1))
             assert first.read(request).direction.shape == (1, 2)
@@ -89,9 +88,9 @@ def test_raster_only_and_foreign_request(hfx: Path) -> None:
                 second.read(request)
 
 
-def test_vector_laziness_and_prepare_without_pixels(hfx: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    add_pair(hfx)
-    with Dataset.open(hfx) as data:
+def test_vector_laziness_and_prepare_without_pixels(spatial_hfx: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    add_pair(spatial_hfx)
+    with HydroFabric(spatial_hfx, cache=False) as data:
         assert not any(name.endswith(".tif") for name in data._source._files)
         original_open = rasterio.open
         opened = []
@@ -122,59 +121,59 @@ def test_vector_laziness_and_prepare_without_pixels(hfx: Path, monkeypatch: pyte
         assert opened == ["dir.tif", "acc.tif"]
 
 
-def test_missing_coverage_and_declarations(hfx: Path) -> None:
+def test_missing_coverage_and_declarations(spatial_hfx: Path) -> None:
     from pourpoint.rasters import MissingRastersError, RasterCoverageError
 
-    with Dataset.open(hfx) as data, pytest.raises(MissingRastersError):
+    with HydroFabric(spatial_hfx, cache=False) as data, pytest.raises(MissingRastersError):
         data.rasters.prepare((0, 0, 1, 1))
-    add_pair(hfx)
-    with Dataset.open(hfx) as data, pytest.raises(RasterCoverageError):
+    add_pair(spatial_hfx)
+    with HydroFabric(spatial_hfx, cache=False) as data, pytest.raises(RasterCoverageError):
         data.rasters.prepare((0, 0, 5, 2))
-    manifest = json.loads((hfx / "manifest.json").read_text())
+    manifest = json.loads((spatial_hfx / "manifest.json").read_text())
     manifest["auxiliary"][-1]["metadata"]["flow_dir_encoding"] = "unknown"
-    (hfx / "manifest.json").write_text(json.dumps(manifest))
-    with Dataset.open(hfx) as data, pytest.raises(ValueError, match="declaration"):
+    (spatial_hfx / "manifest.json").write_text(json.dumps(manifest))
+    with HydroFabric(spatial_hfx, cache=False) as data, pytest.raises(ValueError, match="declaration"):
         _ = data.rasters
 
 
 @pytest.mark.parametrize("change", ["transform", "crs", "dtype", "nodata"])
-def test_invalid_pair_headers(hfx: Path, change: str) -> None:
+def test_invalid_pair_headers(spatial_hfx: Path, change: str) -> None:
     from conftest import refresh_fingerprint
 
-    add_pair(hfx)
+    add_pair(spatial_hfx)
     if change == "dtype":
-        with rasterio.open(hfx / "acc.tif") as old:
+        with rasterio.open(spatial_hfx / "acc.tif") as old:
             profile = old.profile
         profile["dtype"] = "float64"
-        with rasterio.open(hfx / "acc.tif", "w", **profile) as changed:
+        with rasterio.open(spatial_hfx / "acc.tif", "w", **profile) as changed:
             changed.write(np.ones((2, 4)), 1)
     else:
-        with rasterio.open(hfx / "acc.tif", "r+") as changed:
+        with rasterio.open(spatial_hfx / "acc.tif", "r+") as changed:
             if change == "transform":
                 changed.transform = from_origin(0.5, 2, 1, 1)
             elif change == "crs":
                 changed.crs = "EPSG:3857"
             else:
                 changed.nodata = None
-    refresh_fingerprint(hfx, "acc.tif")
-    with Dataset.open(hfx) as data, pytest.raises(ValueError, match="raster pair"):
+    refresh_fingerprint(spatial_hfx, "acc.tif")
+    with HydroFabric(spatial_hfx, cache=False) as data, pytest.raises(ValueError, match="raster pair"):
         data.rasters.prepare((0, 0, 1, 1))
 
 
-def test_projected_edges_and_pair_selection(hfx: Path) -> None:
+def test_projected_edges_and_pair_selection(spatial_hfx: Path) -> None:
     # North polar rectangle: the south edge curves below its two corners.
     # EPSG:3413 longitude -45 is the edge's extremum; corner-only transforms miss it.
-    add_pair(hfx)
+    add_pair(spatial_hfx)
     shape = (40, 40)
     add_pair(
-        hfx,
+        spatial_hfx,
         prefix="polar-",
         crs="EPSG:3413",
         transform=from_origin(-2000000, 0, 100000, 100000),
         direction=np.ones(shape, dtype="uint8"),
         accumulation=np.ones(shape, dtype="float32"),
     )
-    with Dataset.open(hfx) as data:
+    with HydroFabric(spatial_hfx, cache=False) as data:
         request = data.rasters.prepare((-90, 70, 0, 80))
         assert request.grid.crs == rasterio.crs.CRS.from_epsg(3413)
         # Southern edge y=-2187927.65 at -45 degrees, beyond corners at -1547098.48.
@@ -184,24 +183,24 @@ def test_projected_edges_and_pair_selection(hfx: Path) -> None:
         assert data.rasters.read(request).direction.shape == (15, 32)
 
 
-def test_tile_boundary_signed_grass_and_invalid_accumulation(hfx: Path) -> None:
+def test_tile_boundary_signed_grass_and_invalid_accumulation(spatial_hfx: Path) -> None:
     direction = np.full((32, 32), -8, dtype="int8")
     direction[16, 16] = 0
     accumulation = np.full((32, 32), 2, dtype="float32")
     accumulation[15, 15] = -1
-    add_pair(hfx, direction=direction, accumulation=accumulation, transform=from_origin(0, 32, 1, 1))
-    with Dataset.open(hfx) as data:
+    add_pair(spatial_hfx, direction=direction, accumulation=accumulation, transform=from_origin(0, 32, 1, 1))
+    with HydroFabric(spatial_hfx, cache=False) as data:
         window = data.rasters.read(data.rasters.prepare((15, 14, 18, 16)))
         np.testing.assert_array_equal(window.direction, [[-1, 0, -1], [-1, -1, -1]])
         with pytest.raises(ValueError, match="accumulation"):
             data.rasters.read(data.rasters.prepare((15, 16, 16, 17)))
 
 
-def test_cached_local_mutation_and_thread_ownership(hfx: Path) -> None:
+def test_cached_local_mutation_and_thread_ownership(spatial_hfx: Path) -> None:
     from concurrent.futures import ThreadPoolExecutor
 
-    add_pair(hfx)
-    with Dataset.open(hfx) as data:
+    add_pair(spatial_hfx)
+    with HydroFabric(spatial_hfx, cache=False) as data:
         reader = data.rasters
         request = reader.prepare((0, 0, 1, 1))
         reader.read(request)
@@ -210,36 +209,36 @@ def test_cached_local_mutation_and_thread_ownership(hfx: Path) -> None:
                 pool.submit(reader.read, request).result()
 
             def private_pair() -> np.ndarray:
-                with Source(hfx) as source, RasterReader(source, data.manifest) as worker:
+                with Source(spatial_hfx) as source, RasterReader(source, data.manifest) as worker:
                     return worker.read(worker.prepare((0, 0, 1, 1))).direction
 
             np.testing.assert_array_equal(pool.submit(private_pair).result(), [[3]])
         with reader._call(), pytest.raises(RuntimeError, match="active call"):
             reader.read(request)
-        (hfx / "dir.tif").write_bytes((hfx / "dir.tif").read_bytes())
+        (spatial_hfx / "dir.tif").write_bytes((spatial_hfx / "dir.tif").read_bytes())
         with pytest.raises(ValueError, match="changed"):
             reader.read(request)
 
 
 @pytest.mark.parametrize("units", ["cells", "km2"])
-def test_float_bits_and_header_nodata_precedence(hfx: Path, units: str) -> None:
+def test_float_bits_and_header_nodata_precedence(spatial_hfx: Path, units: str) -> None:
     from conftest import refresh_fingerprint
 
     add_pair(
-        hfx,
+        spatial_hfx,
         direction=np.array([[8, 0, 7, 255]], dtype="uint8"),
         accumulation=np.array([[0.1, np.nan, 16777218, 0]], dtype="float32"),
     )
-    with rasterio.open(hfx / "dir.tif", "r+") as band:
+    with rasterio.open(spatial_hfx / "dir.tif", "r+") as band:
         band.nodata = 255
-    with rasterio.open(hfx / "acc.tif", "r+") as band:
+    with rasterio.open(spatial_hfx / "acc.tif", "r+") as band:
         band.nodata = float("nan")
-    refresh_fingerprint(hfx, "acc.tif")
-    path = hfx / "manifest.json"
+    refresh_fingerprint(spatial_hfx, "acc.tif")
+    path = spatial_hfx / "manifest.json"
     manifest = json.loads(path.read_text())
     manifest["auxiliary"][-1]["metadata"]["flow_acc_units"] = units
     path.write_text(json.dumps(manifest))
-    with Dataset.open(hfx) as data:
+    with HydroFabric(spatial_hfx, cache=False) as data:
         result = data.rasters.read(data.rasters.prepare((0, 1, 4, 2)))
         assert result.accumulation_units == units
         np.testing.assert_array_equal(
@@ -248,10 +247,10 @@ def test_float_bits_and_header_nodata_precedence(hfx: Path, units: str) -> None:
         np.testing.assert_array_equal(result.accumulation_valid, [[True, False, True, True]])
         np.testing.assert_array_equal(result.direction_valid, [[True, True, True, False]])
     # Header may identify a normally valid direction code as nodata.
-    with rasterio.open(hfx / "dir.tif", "r+") as band:
+    with rasterio.open(spatial_hfx / "dir.tif", "r+") as band:
         band.nodata = 8
-    refresh_fingerprint(hfx, "dir.tif")
-    with Dataset.open(hfx) as data:
+    refresh_fingerprint(spatial_hfx, "dir.tif")
+    with HydroFabric(spatial_hfx, cache=False) as data:
         result = data.rasters.read(data.rasters.prepare((0, 1, 3, 2)))
         np.testing.assert_array_equal(result.direction_valid, [[False, True, True]])
         np.testing.assert_array_equal(result.direction, [[0, 0, 2]])
@@ -260,24 +259,24 @@ def test_float_bits_and_header_nodata_precedence(hfx: Path, units: str) -> None:
             data.rasters.read(data.rasters.prepare((3, 1, 4, 2)))
 
 
-def test_pair_open_failure_closes_acquired_cursors(hfx: Path) -> None:
+def test_pair_open_failure_closes_acquired_cursors(spatial_hfx: Path) -> None:
     from conftest import refresh_fingerprint
     from rasterio.errors import RasterioIOError
 
-    add_pair(hfx)
-    (hfx / "acc.tif").write_bytes(b"not a TIFF")
-    refresh_fingerprint(hfx, "acc.tif")
-    with Dataset.open(hfx) as data:
+    add_pair(spatial_hfx)
+    (spatial_hfx / "acc.tif").write_bytes(b"not a TIFF")
+    refresh_fingerprint(spatial_hfx, "acc.tif")
+    with HydroFabric(spatial_hfx, cache=False) as data:
         with pytest.raises(RasterioIOError):
             data.rasters.prepare((0, 0, 1, 1))
         assert not data.rasters._pairs
         assert all(stream.closed for stream in data._source._independent_files)
 
 
-def test_projection_domain_does_not_hide_later_covering_pair(hfx: Path) -> None:
-    add_pair(hfx, prefix="utm-", crs="EPSG:32631", transform=from_origin(500000, 2, 1, 1))
-    add_pair(hfx, prefix="geographic-", transform=from_origin(90, 2, 1, 1))
-    with Dataset.open(hfx) as data:
+def test_projection_domain_does_not_hide_later_covering_pair(spatial_hfx: Path) -> None:
+    add_pair(spatial_hfx, prefix="utm-", crs="EPSG:32631", transform=from_origin(500000, 2, 1, 1))
+    add_pair(spatial_hfx, prefix="geographic-", transform=from_origin(90, 2, 1, 1))
+    with HydroFabric(spatial_hfx, cache=False) as data:
         request = data.rasters.prepare((92, 0, 94, 1))
         assert request.grid.crs == rasterio.crs.CRS.from_epsg(4326)
         assert (request.col, request.row, request.width, request.height) == (2, 1, 2, 1)
@@ -287,30 +286,30 @@ def test_projection_domain_does_not_hide_later_covering_pair(hfx: Path) -> None:
 
 
 @pytest.mark.parametrize("nodata", [255, 8])
-def test_header_nodata_precedes_internal_masks(hfx: Path, nodata: int) -> None:
+def test_header_nodata_precedes_internal_masks(spatial_hfx: Path, nodata: int) -> None:
     from conftest import refresh_fingerprint
 
     add_pair(
-        hfx,
+        spatial_hfx,
         direction=np.array([[8, 7, 0, nodata], [6, 5, 4, 3]], dtype="uint8"),
         accumulation=np.array([[1, 2, 3, 4], [np.nan, 6, 7, 8]], dtype="float32"),
     )
     with rasterio.Env(GDAL_TIFF_INTERNAL_MASK=True):
         for name in ("dir.tif", "acc.tif"):
-            with rasterio.open(hfx / name, "r+") as band:
+            with rasterio.open(spatial_hfx / name, "r+") as band:
                 band.nodata = nodata if name == "dir.tif" else float("nan")
                 band.write_mask(np.full((2, 4), 255, dtype="uint8"))
-            refresh_fingerprint(hfx, name)
-    with Dataset.open(hfx) as data:
+            refresh_fingerprint(spatial_hfx, name)
+    with HydroFabric(spatial_hfx, cache=False) as data:
         result = data.rasters.read(data.rasters.prepare((0, 0, 4, 2)))
         np.testing.assert_array_equal(result.direction_valid, [[nodata != 8, True, True, False], [True] * 4])
         np.testing.assert_array_equal(result.accumulation_valid, [[True] * 4, [False, True, True, True]])
 
 
-def test_native_geographic_bounds_use_declared_angular_units(hfx: Path) -> None:
+def test_native_geographic_bounds_use_declared_angular_units(spatial_hfx: Path) -> None:
     # NTF (Paris) uses grads: latitude 95 grads is valid, not 95 degrees.
-    add_pair(hfx, crs="EPSG:4807", transform=from_origin(0, 96, 1, 1))
-    with Dataset.open(hfx) as data:
+    add_pair(spatial_hfx, crs="EPSG:4807", transform=from_origin(0, 96, 1, 1))
+    with HydroFabric(spatial_hfx, cache=False) as data:
         request = data.rasters.prepare((0, 94, 1, 95), crs="EPSG:4807")
         assert (request.col, request.row, request.width, request.height) == (0, 1, 1, 1)
         np.testing.assert_array_equal(data.rasters.read(request).direction, [[3]])
@@ -348,11 +347,11 @@ def external_manifest(root: Path, url: str) -> RasterManifestFixture:
     return RasterManifestFixture({k: Fingerprint.parse(v) for k, v in raw["artifacts"].items()}, raw)
 
 
-def test_external_native_pair(hfx: Path, external_origin: tuple[str, OriginState]) -> None:
-    add_pair(hfx)
+def test_external_native_pair(spatial_hfx: Path, external_origin: tuple[str, OriginState]) -> None:
+    add_pair(spatial_hfx)
     url, state = external_origin
-    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
-    manifest = external_manifest(hfx, url)
+    state["files"] = {name: (spatial_hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    manifest = external_manifest(spatial_hfx, url)
     with (
         Source(url, storage_options={"client_options": {"allow_http": True}}) as source,
         RasterReader(source, manifest) as reader,
@@ -367,11 +366,11 @@ def test_external_native_pair(hfx: Path, external_origin: tuple[str, OriginState
     assert all(item[2:] == ('"v1"', "identity") for item in state["requests"])
 
 
-def test_external_raster_identity_rejected(hfx: Path, external_origin: tuple[str, OriginState]) -> None:
-    add_pair(hfx)
+def test_external_raster_identity_rejected(spatial_hfx: Path, external_origin: tuple[str, OriginState]) -> None:
+    add_pair(spatial_hfx)
     url, state = external_origin
-    manifest = external_manifest(hfx, url)
-    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    manifest = external_manifest(spatial_hfx, url)
+    state["files"] = {name: (spatial_hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
     state["files"]["dir.tif"] = b"x" + state["files"]["dir.tif"][1:]
     with (
         Source(url, storage_options={"client_options": {"allow_http": True}}) as source,
@@ -382,15 +381,15 @@ def test_external_raster_identity_rejected(hfx: Path, external_origin: tuple[str
 
 
 def test_external_raster_persistent_native_replay(
-    hfx: Path, external_origin: tuple[str, OriginState], monkeypatch: pytest.MonkeyPatch
+    spatial_hfx: Path, external_origin: tuple[str, OriginState], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import obstore
 
-    add_pair(hfx)
+    add_pair(spatial_hfx)
     url, state = external_origin
-    manifest = external_manifest(hfx, url)
-    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
-    cache_dir = hfx / "cache"
+    manifest = external_manifest(spatial_hfx, url)
+    state["files"] = {name: (spatial_hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    cache_dir = spatial_hfx / "cache"
     with (
         Source(
             url, storage_options={"client_options": {"allow_http": True}}, cache=True, cache_dir=cache_dir
@@ -420,54 +419,59 @@ def test_external_raster_persistent_native_replay(
 
 
 @pytest.mark.parametrize("change", ["url", "retention"])
-def test_invalid_external_raster_declaration(hfx: Path, change: str) -> None:
-    add_pair(hfx)
-    manifest = external_manifest(hfx, "https://example.com")
+def test_invalid_external_raster_declaration(spatial_hfx: Path, change: str) -> None:
+    add_pair(spatial_hfx)
+    manifest = external_manifest(spatial_hfx, "https://example.com")
     raw = dict(manifest.declarations)
     external = cast(dict[str, dict[str, object]], raw["external_artifacts"])
     external["flow_dir"][change] = "http://example.com/dir.tif" if change == "url" else ""
     with (
-        Source(hfx) as source,
+        Source(spatial_hfx) as source,
         RasterReader(source, manifest) as reader,
         pytest.raises(ValueError, match="external raster"),
     ):
         reader.prepare((0, 0, 4, 2))
 
 
-def test_offline_missing_raster_pixels_fail_cleanly(hfx: Path) -> None:
+def test_offline_missing_raster_pixels_fail_cleanly(spatial_hfx: Path) -> None:
     shape = (512, 512)
     add_pair(
-        hfx,
+        spatial_hfx,
         direction=np.full(shape, 8, dtype="uint8"),
         accumulation=np.ones(shape, dtype="float32"),
         transform=from_origin(0, 512, 1, 1),
     )
-    manifest = Manifest.parse(json.loads((hfx / "manifest.json").read_text()))
-    with Source(hfx, cache=True, cache_dir=hfx / "cache") as source, RasterReader(source, manifest) as reader:
+    manifest = SpatialManifest.parse(json.loads((spatial_hfx / "manifest.json").read_text()))
+    with (
+        Source(spatial_hfx, cache=True, cache_dir=spatial_hfx / "cache") as source,
+        RasterReader(source, manifest) as reader,
+    ):
         reader.prepare((100, 50, 101, 51))
     with (
-        Source(hfx, cache=True, cache_dir=hfx / "cache", offline=True) as source,
+        Source(spatial_hfx, cache=True, cache_dir=spatial_hfx / "cache", offline=True) as source,
         RasterReader(source, manifest) as reader,
     ):
         request = reader.prepare((100, 50, 101, 51))
         with pytest.raises(ValueError, match="offline cache missing bytes"):
             reader.read(request)
     # A failed native callback must not poison the next reader.
-    with Source(hfx) as source, RasterReader(source, manifest) as reader:
+    with Source(spatial_hfx) as source, RasterReader(source, manifest) as reader:
         np.testing.assert_array_equal(reader.read(reader.prepare((100, 50, 101, 51))).direction, [[1]])
 
 
-def test_raster_transport_identity_error_during_pixels(hfx: Path, external_origin: tuple[str, OriginState]) -> None:
+def test_raster_transport_identity_error_during_pixels(
+    spatial_hfx: Path, external_origin: tuple[str, OriginState]
+) -> None:
     shape = (512, 512)
     add_pair(
-        hfx,
+        spatial_hfx,
         direction=np.full(shape, 8, dtype="uint8"),
         accumulation=np.ones(shape, dtype="float32"),
         transform=from_origin(0, 512, 1, 1),
     )
     url, state = external_origin
-    state["files"] = {name: (hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
-    manifest = external_manifest(hfx, url)
+    state["files"] = {name: (spatial_hfx / name).read_bytes() for name in ("dir.tif", "acc.tif")}
+    manifest = external_manifest(spatial_hfx, url)
     with (
         Source(url, storage_options={"client_options": {"allow_http": True}}) as source,
         RasterReader(source, manifest) as reader,
@@ -484,15 +488,15 @@ def test_raster_transport_identity_error_during_pixels(hfx: Path, external_origi
         np.testing.assert_array_equal(reader.read(reader.prepare((100, 50, 101, 51))).direction, [[1]])
 
 
-def test_missing_raster_header_bytes_fail_cleanly(hfx: Path) -> None:
+def test_missing_raster_header_bytes_fail_cleanly(spatial_hfx: Path) -> None:
     import sqlite3
 
-    add_pair(hfx)
-    manifest = Manifest.parse(json.loads((hfx / "manifest.json").read_text()))
-    cache_dir = hfx / "cache"
-    with Source(hfx, cache=True, cache_dir=cache_dir) as source, RasterReader(source, manifest) as reader:
+    add_pair(spatial_hfx)
+    manifest = SpatialManifest.parse(json.loads((spatial_hfx / "manifest.json").read_text()))
+    cache_dir = spatial_hfx / "cache"
+    with Source(spatial_hfx, cache=True, cache_dir=cache_dir) as source, RasterReader(source, manifest) as reader:
         reader.read(reader.prepare((0, 0, 1, 1)))
-    with Source(hfx, cache=True, cache_dir=cache_dir, offline=True) as source:
+    with Source(spatial_hfx, cache=True, cache_dir=cache_dir, offline=True) as source:
         # Validate identities first, then lose persisted header bytes before GDAL's cursor reads them.
         for name in ("dir.tif", "acc.tif"):
             source.open_artifact(name, manifest.artifacts[name], bounded=True)
@@ -500,5 +504,5 @@ def test_missing_raster_header_bytes_fail_cleanly(hfx: Path) -> None:
             db.execute("DELETE FROM ranges")
         with RasterReader(source, manifest) as reader, pytest.raises(ValueError, match="offline cache missing bytes"):
             reader.prepare((0, 0, 1, 1))
-    with Source(hfx) as source, RasterReader(source, manifest) as reader:
+    with Source(spatial_hfx) as source, RasterReader(source, manifest) as reader:
         np.testing.assert_array_equal(reader.read(reader.prepare((0, 0, 1, 1))).direction, [[3]])

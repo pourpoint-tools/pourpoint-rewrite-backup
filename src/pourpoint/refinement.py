@@ -29,30 +29,53 @@ from pourpoint.results import BatchResult, OperationError, Target
 
 @dataclass(frozen=True)
 class SubbasinContribution:
+    """A contributing polygonal portion retaining its whole source unit.
+
+    Attributes
+    ----------
+    source
+        Original sub-basin with unchanged attributes, metadata and source WKB.
+    geometry
+        Derived contribution in EPSG:4326. Source area and other quantities are
+        not recomputed for this geometry. Materialized portions survive closure."""
+
     source: Subbasin
     geometry: BaseGeometry
 
     @property
     def id(self) -> int:
+        """Original source sub-basin ID."""
         return self.source.id
 
     @property
     def attributes(self) -> Attributes:
+        """Unchanged source attributes, including nulls and original quantities."""
         return self.source.attributes
 
 
 @dataclass(frozen=True)
 class OutletCell:
+    """A selected cell addressed on the original native raster grid.
+
+    Attributes
+    ----------
+    grid
+        Source grid identity, CRS, affine transform and dimensions.
+    row, col
+        Zero-based source-grid indices, not offsets within a read window."""
+
     grid: RasterGrid
     row: int
     col: int
 
     @property
     def center(self) -> Point:
+        """Cell center in the native grid CRS; a display location, not a station correction."""
         return Point(self.grid.transform @ (self.col + 0.5, self.row + 0.5))
 
     @property
     def geometry(self) -> Polygon:
+        """Cell boundary polygon derived from the native grid affine transform."""
         return Polygon(
             [self.grid.transform @ (self.col + x, self.row + y) for x, y in ((0, 0), (1, 0), (1, 1), (0, 1))]
         )
@@ -60,6 +83,23 @@ class OutletCell:
 
 @dataclass(frozen=True)
 class RasterSubset:
+    """Materialized native raster window with the refinement mask.
+
+    Attributes
+    ----------
+    window
+        Retained paired-band values, validity, native CRS and affine transform.
+    mask
+        Boolean array aligned with the window; True admits cells in the whole
+        vector delineation mask, not just cells in the final watershed.
+    band
+        Selects direction or accumulation values for export.
+
+    Notes
+    -----
+    Export keeps source values at valid masked cells and uses source nodata
+    elsewhere. The window is already read, not a deferred fabric request."""
+
     window: RasterWindow
     mask: npt.NDArray[np.bool_]
     band: Literal["direction", "accumulation"]
@@ -67,12 +107,34 @@ class RasterSubset:
 
 @dataclass(frozen=True)
 class RefinementRasters:
+    """Paired raster subsets over the same whole vector mask.
+
+    Attributes
+    ----------
+    direction, accumulation
+        Native-grid subsets for the corresponding bands. Neither is restricted
+        to the final contributing watershed. Source values and nodata are retained."""
+
     direction: RasterSubset
     accumulation: RasterSubset
 
 
 @dataclass(frozen=True)
 class GranularRefinement:
+    """Point refinement partitioned at original sub-basin boundaries.
+
+    Attributes
+    ----------
+    subbasins
+        Nonempty contributing portions in source input order, with unchanged
+        source identity and attributes. Geometries use EPSG:4326.
+    outlet_cell
+        Selected source-grid cell, whose geometry uses the native raster CRS.
+    rasters
+        Materialized band subsets over the complete combined vector mask.
+    provenance
+        Source manifest declarations; not proof of vector/raster equivalence."""
+
     subbasins: list[SubbasinContribution]
     outlet_cell: OutletCell
     rasters: RefinementRasters
@@ -81,6 +143,21 @@ class GranularRefinement:
 
 @dataclass(frozen=True)
 class FootprintRefinement:
+    """Point refinement returned as one merged footprint.
+
+    Attributes
+    ----------
+    footprint
+        Polygon or MultiPolygon contribution in EPSG:4326, not a fabricated
+        source sub-basin. Equivalent to merging granular refinement of the
+        same combined mask and target.
+    outlet_cell
+        Selected source-grid cell in the native raster CRS.
+    rasters
+        Materialized band subsets over the complete input vector mask.
+    provenance
+        Source manifest declarations; not proof of vector/raster equivalence."""
+
     footprint: Polygon | MultiPolygon
     outlet_cell: OutletCell
     rasters: RefinementRasters
@@ -108,7 +185,22 @@ def merge(*, subbasins: Sequence[Sequence[BasinPart]]) -> list[Polygon | MultiPo
 def merge(
     *, subbasins: Sequence[BasinPart] | Sequence[Sequence[BasinPart]]
 ) -> Polygon | MultiPolygon | list[Polygon | MultiPolygon]:
-    """Union one collection; nested collections remain separate. Empty means empty polygon."""
+    """Merge sub-basin geometries without creating a new source feature.
+
+    Parameters
+    ----------
+    subbasins
+        Whole units or contributions forming one footprint, or nested groups
+        representing independent footprints. Geometries use EPSG:4326.
+
+    Returns
+    -------
+    Polygon or MultiPolygon or list
+        Polygonal union for one group; an ordered list of unions for nested
+        groups. An empty outer input returns an empty Polygon, not a list.
+        Empty inner groups produce empty Polygons. No source attributes are
+        aggregated, and no source access or geometry repair is performed.
+    """
     if not subbasins:
         return Polygon()
     if isinstance(subbasins[0], (Subbasin, SubbasinContribution)):
@@ -272,7 +364,71 @@ def refine(
     window_size: int = 3,
     n_jobs: int = 1,
 ) -> GranularRefinement | FootprintRefinement | BatchResult[GranularRefinement]:
-    """Refine one point or an identified selection batch without losing identity."""
+    """Trace incoming native D8 flow inside a complete vector mask.
+
+    Parameters
+    ----------
+    fabric
+        Open fabric supplying the native direction/accumulation pair.
+    target
+        Nonempty point in EPSG:4326 covered by the mask. Omit for a selection
+        batch, which carries its own target geometries.
+    subbasins
+        Whole source units forming one mask, or a selection `BatchResult`.
+        Mutually exclusive with ``footprint``. Batch identity, order and prior
+        issues are preserved; failed slots are not retried.
+    footprint
+        Nonempty Polygon or MultiPolygon in EPSG:4326, used as one mask.
+        Supply exactly one mask form. Batch footprints come from ``subbasins``.
+    window_size
+        Positive odd search width in native cells around the cell containing
+        the target. Size 1 permits no move beyond that cell. Selects the highest
+        valid accumulation inside the mask, breaking ties by source row then
+        column. Both bands must be valid for outlet selection.
+    n_jobs
+        Batch worker limit: 1 is sequential, -1 uses available CPU capacity,
+        and positive values bound worker-owned readers.
+
+    Returns
+    -------
+    GranularRefinement or FootprintRefinement or BatchResult
+        Contributions for sub-basin input or one footprint for geometry input,
+        plus the selected native outlet cell and materialized raster subsets.
+        Empty source pieces are omitted. Both forms trace the same combined
+        mask; merging granular contributions yields the footprint result.
+
+    Raises
+    ------
+    OperationError
+        ``refinement.point_required`` for a nonpoint or empty point geometry,
+        ``refinement.empty_mask`` for an empty or nonpolygon mask,
+        ``refinement.outside_mask`` when the point is not covered,
+        ``refinement.missing_rasters`` for an absent raster pair,
+        ``refinement.no_coverage`` for inadequate raster coverage, or
+        ``refinement.no_outlet`` when the local search has no valid masked cell.
+        Batches retain these failures as issues with None slots.
+    ValueError
+        Invalid window/worker count or mutually incompatible mask arguments.
+        Integrity and unexpected errors also propagate, including in batches.
+    TypeError
+        A single call omits ``target``.
+
+    Notes
+    -----
+    Assumes the whole vector mask equals the raster watershed at the terminal
+    unit outlet, and that the requested point drains to that outlet. Execution
+    does not verify this scientific equivalence. The default local search is a
+    practical choice, not a universal optimum; larger windows can switch branches.
+
+    Mask cells use GDAL center-based rasterization. Reverse D8 tracing spans
+    the entire mask and needs only valid direction, not valid accumulation;
+    zero and signed negative directions are terminal. Paths cannot leave the
+    mask. Native direction pointers are never warped. Selected cell polygons
+    are transformed to EPSG:4326 and clipped to the vector mask, then partitioned
+    at source boundaries for granular output. No hole filling is applied.
+    Materialized vectors survive fabric closure; perform source-dependent
+    operations and export within the fabric context.
+    """
     workers(n_jobs)
     if type(window_size) is not int or window_size < 1 or window_size % 2 != 1:
         raise ValueError("window_size must be a positive odd integer")

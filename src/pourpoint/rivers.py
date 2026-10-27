@@ -21,16 +21,26 @@ from pourpoint.results import OperationError
 
 @dataclass(frozen=True)
 class ClippedRiver(River):
-    """A river portion; Arrow values and WKB still describe the source feature."""
+    """A derived river portion retaining the original source record.
+
+    Attributes
+    ----------
+    portion
+        Selected linework in EPSG:4326, exposed by ``geometry``. New endpoints
+        from clipping are not natural outlets. Inherited ID, attributes and WKB
+        still describe the source feature, not recomputed values for the portion.
+    """
 
     portion: BaseGeometry
 
     @property
     def geometry(self) -> BaseGeometry:
+        """Selected river portion in EPSG:4326."""
         return self.portion
 
     @property
     def source(self) -> River:
+        """Original whole river record, with source geometry and attributes."""
         return River(self.table, self.row)
 
 
@@ -87,7 +97,50 @@ def select_rivers(
     level: int = 1,
     include_downstream: bool = False,
 ) -> RiverNetwork:
-    """Clip to one combined EPSG:4326 footprint, optionally retaining all downstream flow."""
+    """Select river portions inside one combined footprint.
+
+    Parameters
+    ----------
+    fabric
+        Open fabric supplying rivers and their relationships.
+    target
+        EPSG:4326 polygonal geometry, sub-basin/contribution, or collection of
+        parts forming one footprint. Internal part boundaries do not limit flow;
+        this collection is not a batch of independent targets.
+    level
+        Nonnegative river level, independent of catchment levels. No fallback
+        or inferred correspondence between catchment and river tiers is used.
+    include_downstream
+        Extend along every supplied outgoing continuation, including splits and
+        reconvergence. Features are deduplicated by source ID. Partial boundary
+        features require unambiguous orientation to retain downstream linework.
+
+    Returns
+    -------
+    RiverNetwork
+        Selected portions with original identities, attributes, directed
+        relationships and supplied nodes. Source quantities are not recomputed.
+        Empty footprints or no intersecting rivers give an empty network when
+        the river family is supplied. Materialized results survive closure.
+
+    Raises
+    ------
+    OperationError
+        ``rivers.unavailable`` when the river family is absent;
+        ``rivers.connectivity_unavailable`` when extension needs unsupplied
+        downstream connectivity; ``rivers.ambiguous_direction`` when a partial
+        feature cannot be oriented from supplied orientation or endpoint nodes.
+    ValueError
+        Invalid level, nonpolygonal nonempty footprint, or downstream flow
+        crossing river levels. Integrity errors propagate rather than producing
+        a partial network.
+
+    Notes
+    -----
+    Clipping creates endpoints, not natural outlets. Retained relationship
+    references outside the selection must not be interpreted as missing flow
+    or source-described termination. No mainstem is inferred from node incidence.
+    """
     if type(level) is not int or level < 0:
         raise ValueError("level must be a nonnegative integer")
     if isinstance(target, BaseGeometry):
@@ -149,15 +202,38 @@ type SnapGeometry = RiverNetwork | River | BaseGeometry | Sequence[River]
 
 
 def snap(*, target: BaseGeometry, onto: SnapGeometry, radius: float) -> Point:
-    """Nearest point on supplied EPSG:4326 line segments, measured on WGS84 in metres.
+    """Find the nearest point on supplied streams within a search radius.
 
-    Segment positions retain source straight longitude/latitude interpolation, not
-    great-circle arcs. Input vertices must be finite WGS84 longitude/latitude values.
-    Segments spanning 180 degrees or more of longitude are rejected: split stream
-    geometry at the antimeridian before calling, rather than relying on unwrapping.
-    Golden-section minimization is intended for local stream segments; it is not a
-    global optimizer for arbitrary globe-spanning lines. Distance is geodesic, not
-    degree distance or stream rank; equal minima retain input order.
+    Parameters
+    ----------
+    target
+        Nonempty finite Point in EPSG:4326 (longitude, latitude).
+    onto
+        LineString, MultiLineString, River, RiverNetwork or sequence of rivers.
+        Stream vertices must be finite and in EPSG:4326.
+    radius
+        Maximum WGS84 ground distance in metres, finite and nonnegative.
+
+    Returns
+    -------
+    Point
+        Snapped location in EPSG:4326. Equal-distance matches retain input order.
+
+    Raises
+    ------
+    OperationError
+        ``snap.point_required`` for an invalid WGS84 point;
+        ``snap.no_match`` when no supplied stream is in range.
+    ValueError
+        Invalid radius or stream geometry. Split segments spanning 180 degrees
+        or more of longitude before calling.
+
+    Notes
+    -----
+    Intended for local stream segments, not arbitrary globe-spanning lines.
+    Segments interpolate straight in longitude/latitude, not along great-circle
+    arcs; distances are measured on the WGS84 ellipsoid. This optional operation
+    neither infers a network nor selects a raster outlet cell.
     """
     if not isinstance(target, Point) or target.is_empty or not all(isfinite(v) for v in target.coords[0]):
         raise OperationError("snap.point_required", "snap target must be a nonempty finite Point")
