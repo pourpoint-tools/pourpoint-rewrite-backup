@@ -71,7 +71,49 @@ def select_upstream_subbasins(
 def select_upstream_subbasins(
     *, fabric: HydroFabric, target: BaseGeometry | Targets, level: int = 1, n_jobs: int = 1
 ) -> list[Subbasin] | BatchResult[list[Subbasin]]:
-    """Select intersecting whole units and their inclusive upstream closure."""
+    """Select whole sub-basins approximating land draining to a target.
+
+    Parameters
+    ----------
+    fabric
+        Open HFX fabric supplying catchments and upstream connectivity.
+    target
+        EPSG:4326 geometry, or a dictionary of named geometries or list for a
+        batch. A multipart geometry is one target. Regions include boundary
+        intersections. A point on a shared boundary belongs to the smallest
+        supplied catchment ID; river associations do not determine ownership.
+    level
+        Nonnegative catchment level, selected explicitly without fallback.
+    n_jobs
+        Batch worker limit: 1 is sequential, -1 uses available CPU capacity,
+        and positive values bound worker-owned readers. Single calls are serial.
+
+    Returns
+    -------
+    list or BatchResult
+        Whole intersecting units and their inclusive upstream closure. An empty
+        geometry succeeds with an empty list. Batch slots preserve input order;
+        dictionary keys are names, while list entries get new UUID names on
+        each call. Duplicate geometries remain independent targets.
+
+    Raises
+    ------
+    OperationError
+        ``selection.invalid_target`` for invalid geometry,
+        ``selection.no_coverage`` for a nonempty target without coverage, or
+        ``selection.connectivity_unavailable`` for unsupplied connectivity.
+        Batches retain these failures as issues with None result slots.
+    ValueError
+        Invalid level or worker count, or a flow relationship crossing levels.
+    TypeError
+        Invalid target type or batch names.
+
+    Notes
+    -----
+    This is whole-unit selection, not exact-point raster delineation. Returned
+    vectors survive fabric closure. Integrity, configuration and unexpected
+    failures propagate even in batches; they are not empty selections.
+    """
     _level(level)
     workers(n_jobs)
     fabric._ensure_open()
@@ -127,10 +169,61 @@ def delineate(
     window_size: int = 3,
     n_jobs: int = 1,
 ) -> DelineationResult | BatchResult[DelineationResult]:
-    """Compose explicit operations without a separate delineation algorithm.
+    """Compose snapping, upstream selection, optional refinement and merging.
 
-    Targets and supplied stream geometries use WGS84 longitude/latitude.
-    ``radius`` is metres; ``window_size`` is an odd number of native cells.
+    Parameters
+    ----------
+    fabric
+        Open fabric used for all source access.
+    target
+        EPSG:4326 geometry, named dictionary or list of geometries. Batch
+        naming and whole-unit selection follow `select_upstream_subbasins`.
+    level
+        Explicit catchment level; no fallback or automatic finest-level choice.
+    snap_onto
+        Optional supplied stream geometry accepted by `snap`. Snapping occurs
+        before selection and requires a point; it is never inferred.
+    radius
+        Maximum snap distance in WGS84 ground metres, finite and nonnegative.
+        Validated even when snapping is disabled.
+    refine
+        Request raster refinement of the adjusted point under the equivalence
+        assumption described by `pourpoint.refinement.refine`. Failure does
+        not fall back to a coarse result.
+    merge
+        Populate the merged geometry as well as retaining individual sub-basins.
+    window_size
+        Positive odd native-cell outlet search width. Validated even without
+        refinement. This is a practical choice, not a universal scientific optimum.
+    n_jobs
+        Batch worker limit: 1 is sequential, -1 uses available CPU capacity,
+        and positive values bound worker-owned readers.
+
+    Returns
+    -------
+    DelineationResult or BatchResult
+        Whole units or refined contributions, optional merged geometry, original
+        and adjusted targets, source declarations, and any selected outlet and
+        raster subsets. Batch identity and order are retained.
+
+    Raises
+    ------
+    OperationError
+        Single-target failures use the codes of `snap`,
+        `select_upstream_subbasins` and `pourpoint.refinement.refine`.
+        Batches record them as issues and None slots, not coarse successes.
+    ValueError
+        Invalid level, worker count, radius or window size, or invalid supplied
+        stream geometry. Shared configuration and integrity failures propagate
+        rather than becoming batch issues.
+    TypeError
+        Invalid target types or nonboolean refinement/merge controls.
+
+    Notes
+    -----
+    No separate delineation algorithm is used. Vector outputs are materialized
+    and remain usable after fabric closure. Vector snapping and raster outlet
+    adjustment are distinct: the latter is retained in ``outlet_cell``.
     """
     _level(level)
     workers(n_jobs)

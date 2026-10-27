@@ -69,6 +69,20 @@ class RasterCoverageError(LookupError):
 
 @dataclass(frozen=True)
 class RasterGrid:
+    """Native source grid shared by a direction/accumulation pair.
+
+    Attributes
+    ----------
+    crs
+        Native coordinate reference system; not necessarily EPSG:4326.
+    transform
+        Affine mapping from source-grid pixel corners to native coordinates.
+    width, height
+        Full source grid dimensions in cells, not read-window dimensions.
+    direction_sha256, accumulation_sha256
+        Published content identities of the two source rasters.
+    """
+
     crs: CRS
     transform: Affine
     width: int
@@ -79,6 +93,23 @@ class RasterGrid:
 
 @dataclass(frozen=True)
 class RasterRequest:
+    """Whole-cell window prepared by one live raster reader.
+
+    Attributes
+    ----------
+    col, row
+        Zero-based upper-left column and row in the full source grid.
+    width, height
+        Window dimensions in native cells.
+    grid
+        Full source grid descriptor, including CRS, affine and raster identities.
+
+    Notes
+    -----
+    Pass this request to the reader that prepared it, before that reader closes.
+    It retains no pixel arrays and cannot be transferred to another reader.
+    """
+
     col: int
     row: int
     width: int
@@ -96,6 +127,34 @@ class RasterWindow:
     Negative directions are exiting flow (terminal for upstream tracing).
     Mask-false direction payloads are zero, not valid terminal cells.
     Accumulation keeps native dtype and declared units, without area conversion.
+
+    Attributes
+    ----------
+    direction
+        Normalized D8 codes indexed by window-relative row and column.
+    accumulation
+        Source accumulation values, without recomputation or unit conversion.
+    direction_valid, accumulation_valid
+        Independent boolean validity masks combining the source mask and header
+        nodata. Use the corresponding mask rather than interpreting payloads alone.
+    transform
+        Affine mapping window-relative pixel corners to native coordinates.
+    crs
+        Native grid CRS; direction pointers have not been warped.
+    accumulation_units
+        Source units: contributing cell count or square kilometres.
+    request
+        Read extent and full source grid; its row/column offsets locate these
+        arrays within that grid.
+    raw_direction
+        Original encoded direction values when retained, otherwise ``None``.
+    direction_nodata, accumulation_nodata
+        Source header nodata values when retained, otherwise ``None``.
+
+    Notes
+    -----
+    Arrays remain usable after reader/fabric closure. Array indices are relative
+    to this window, unlike ``request.row`` and ``request.col``.
     """
 
     direction: npt.NDArray[np.int8]
@@ -200,12 +259,12 @@ class _RasterCursor(IOBase):
 
 
 class RasterReader:
-    """Reusable synchronous pairs belonging to one Source and manifest snapshot.
+    """Read native-grid raster pairs through an open fabric's ``rasters`` property.
 
-    No topology or catchment acquisition. Headers open lazily during prepare().
-    Use one reader and Source per worker, on the thread that creates them. Calls
-    must not overlap. Close this reader before its Source. GDAL owns native caches;
-    close releases handles, not necessarily process-wide cache allocations.
+    Headers open lazily during ``prepare`` without acquiring vector data.
+    Use the reader on its creating thread; calls must not overlap. Fabric closure
+    closes this reader. GDAL owns native caches, so closure releases handles but
+    does not necessarily release process-wide cache allocations.
     """
 
     def __init__(self, source: Source, manifest: RasterManifest) -> None:
@@ -331,9 +390,38 @@ class RasterReader:
     def prepare(self, envelope: Bounds, *, crs: str | CRS = "EPSG:4326") -> RasterRequest:
         """Resolve bounds into enclosing whole native cells, without pixel reads.
 
-        Transform all four edges with 101 interior samples per edge, rather than
-        only opposite corners. Bounds must not wrap the antimeridian. Projected
-        bounds can be supplied directly to avoid a geographic bounding envelope.
+        Parameters
+        ----------
+        envelope
+            Positive-area ``(xmin, ymin, xmax, ymax)`` bounds in ``crs``.
+            Geographic bounds must not wrap the antimeridian.
+        crs
+            Envelope CRS. Coordinates use x/y order. Projected bounds can avoid
+            an unnecessarily large geographic bounding envelope.
+
+        Returns
+        -------
+        RasterRequest
+            Enclosing cells from the first declared pair covering the entire
+            envelope. No mosaic or partial-coverage fallback is performed.
+
+        Raises
+        ------
+        MissingRastersError
+            The publication declares no D8 pair.
+        RasterCoverageError
+            No declared pair covers the whole request.
+        ValueError
+            Bounds, CRS, raster declarations or pair headers are invalid.
+        RuntimeError
+            The reader is closed, used from another thread or already in use.
+
+        Notes
+        -----
+        Opens and validates pair headers, potentially acquiring source bytes.
+        CRS conversion densifies all four edges with 101 interior samples per
+        edge rather than transforming only opposite corners. Direction pointers
+        remain on the native grid.
         """
         with self._call():
             region = bounds(envelope)
@@ -369,6 +457,28 @@ class RasterReader:
             raise RasterCoverageError("no raster pair covers the entire request")
 
     def read(self, request: RasterRequest) -> RasterWindow:
+        """Read both bands and independent validity masks without resampling.
+
+        Parameters
+        ----------
+        request
+            Window prepared by this reader while it remains open.
+
+        Returns
+        -------
+        RasterWindow
+            Caller-owned native-grid arrays. Direction codes are normalized;
+            accumulation values retain their source dtype and units.
+
+        Raises
+        ------
+        ValueError
+            The request belongs to another reader or has an invalid grid/window,
+            consumed direction codes are invalid, or valid accumulation values
+            are negative or nonfinite. Source integrity failures also raise.
+        RuntimeError
+            The reader is closed, used from another thread or already in use.
+        """
         with self._call():
             if request._source is not self._identity or request._pair not in self._pairs:
                 raise ValueError("raster request belongs to another reader")
@@ -419,6 +529,11 @@ class RasterReader:
             )
 
     def close(self) -> None:
+        """Release native raster handles; materialized arrays remain usable.
+
+        Repeated closure is harmless. Outstanding requests cannot be read after
+        closure. The fabric normally manages this lifetime.
+        """
         if self._closed:
             return
         with self._call():

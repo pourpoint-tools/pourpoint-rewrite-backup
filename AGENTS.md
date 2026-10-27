@@ -21,3 +21,24 @@ Investigate old behavior rather than assuming every result is correct.
 - Prefer suitable testing utilities, assertions, and fixtures provided by
   dependencies over hand-rolled equivalents. Add custom fixtures where
   project-specific behavior requires them.
+
+## Public API docstrings
+
+Use NumPy-style docstrings for public operations and user-facing returned types,
+methods and attributes, wherever they are implemented. Let typed signatures carry
+types and defaults. Explain meanings, constraints and interactions rather than
+repeat the signature; use only useful sections and examples.
+
+Document units, CRS, output contents, absent values, source versus derived
+quantities, lifecycle and side effects where applicable. Explain stable failure
+codes and distinguish valid empty results, target-local batch failures and fatal
+configuration or integrity errors. Keep prose explicit and readable for humans
+and LLMs; concision must not remove necessary qualifications. A short summary or
+no prose is enough when the name and signature fully explain the interface.
+
+The [Python API vision](planning/visions/2026-10-20-python-api-and-qgis-workflows.md)
+selects the supported surface. Source docstrings supply the future curated
+mkdocstrings reference: group core workflows and returned results separately from
+advanced records, relationships, traversal, native raster access, metadata and
+diagnostics. Do not document every internal helper or maintain a parallel API
+catalogue. Keep docstrings accurate when interfaces change.

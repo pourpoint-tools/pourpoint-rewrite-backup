@@ -118,11 +118,3 @@ and estimated adjacency storage, not process RSS, Arrow/GDAL metadata, query res
 or geometry allocations. Spatial arrays are prepared on the first candidate query
 per domain and retain 50 bytes per Parquet row group; ID-only reads do not prepare them.
 Public end-to-end evidence documents measured scope and limitations separately.
-
-## Draft-reader compatibility
-
-Existing `Dataset.open` and its `GeometryBatch`/`UnitSelection` interfaces remain
-available for the earlier IPC draft only. They do not read the finalized public
-spatial publication. Migrate final-publication calls to `HydroFabric` and explicit
-domain methods above; do not select a reader using `format_version` alone.
-`Dataset`'s global graph preparation is not used by `HydroFabric`.

@@ -1,4 +1,4 @@
-"""Source-scoped storage, pinned range access and verified original graph files.
+"""Source-scoped storage, pinned range access and verified artifact bytes.
 
 obstore owns transport/authentication; fsspec owns file positioning and buffering.
 The narrow range hook adds HFX integrity checks not exposed by obstore.open_reader.
@@ -11,7 +11,6 @@ import hashlib
 import json
 import os
 import sys
-import tempfile
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
@@ -34,7 +33,17 @@ from pourpoint.metadata import Fingerprint, artifact_path
 
 @dataclass
 class TransferStats:
-    """Source transport calls (including HEAD), payload bytes and disk-cache hits."""
+    """Cumulative source transport and persistent-cache diagnostics.
+
+    Attributes
+    ----------
+    requests
+        Source calls, including HEAD and external raster requests.
+    transferred_bytes
+        Response payload bytes, not total network wire traffic.
+    cache_hit_bytes
+        Bytes served from the persistent disk cache, not in-memory reuse.
+    """
 
     requests: int = 0
     transferred_bytes: int = 0
@@ -124,7 +133,6 @@ class Source:
         self._closed = False
         self._files: dict[str, _ArtifactFile] = {}
         self._independent_files: WeakSet[_ArtifactFile] = WeakSet()
-        self._graphs: dict[Path, tuple[int, int, int, int]] = {}
         self._fingerprints: dict[str, Fingerprint] = {}
         self._bounded: set[str] = set()
         self._parquet: dict[str, pq.ParquetFile] = {}
@@ -467,97 +475,6 @@ class Source:
         with ThreadPoolExecutor(max_workers=self.range_workers) as executor:
             for offset in range(0, len(ranges), self.range_workers):
                 list(executor.map(acquire, ranges[offset : offset + self.range_workers]))
-
-    def graph_path(self, cache_dir: str | Path, path: str, fingerprint: Fingerprint) -> Path:
-        """Verify/reuse an original graph; publish completed downloads atomically.
-
-        Local originals are used in place. Remote cache keys include source and full
-        manifest digest. Reopening checks full cached graph SHA-256, not catchments.
-        """
-        path = self._path(path)
-        if self._local_root is not None:
-            destination = self._local_root / path
-            self._graphs[destination] = self._verify_file(destination, fingerprint)
-            return destination
-        directory = Path(cache_dir) / self.identity
-        directory.mkdir(parents=True, exist_ok=True)
-        destination = directory / f"{fingerprint.sha256}.parquet"
-        if destination.exists():
-            try:
-                self._graphs[destination] = self._verify_file(destination, fingerprint)
-                return destination
-            except ValueError:
-                pass
-        self.open_artifact(path, fingerprint)
-        identity = self._files[path].identity
-        if self.offline:
-            raise ValueError(f"offline cache missing original graph {path}")
-        options: GetOptions = {}
-        if identity.etag:
-            options["if_match"] = identity.etag
-        if identity.version:
-            options["version"] = identity.version
-        with self._stats_lock:
-            self.stats.requests += 1
-        result = obstore.get(self._store, path, options=options)
-        self._check_response(path, identity, result)
-        if result.range != (0, identity.size):
-            raise ValueError(f"{path}: incomplete original artifact")
-        temporary: Path | None = None
-        try:
-            with tempfile.NamedTemporaryFile(dir=directory, suffix=".part", delete=False) as output:
-                temporary = Path(output.name)
-                # A single whole-object GET avoids serial graph range requests.
-                # obstore streams bounded transfer chunks, not one huge allocation.
-                for chunk in result.stream():
-                    output.write(chunk)
-                    with self._stats_lock:
-                        self.stats.transferred_bytes += len(chunk)
-                output.flush()
-                os.fsync(output.fileno())
-            identity = self._verify_file(temporary, fingerprint)
-            os.replace(temporary, destination)
-            self._graphs[destination] = identity
-            self.check_graph(destination)
-            return destination
-        finally:
-            if temporary is not None:
-                temporary.unlink(missing_ok=True)
-
-    @staticmethod
-    def _file_identity(path: Path) -> tuple[int, int, int, int]:
-        stat = path.stat()
-        return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
-
-    def check_graph(self, path: Path) -> None:
-        """Check the verified original before/after local Arrow reads, without hashing.
-
-        The local immutable-file trust model detects replacement, resizing and normal
-        modification. It does not defend against a writer restoring file timestamps.
-        """
-        if self._closed:
-            raise ValueError("source is closed")
-        if path not in self._graphs:
-            raise ValueError("graph was not verified by this source")
-        try:
-            identity = self._file_identity(path)
-        except OSError as exc:
-            raise ValueError(f"{path.name}: graph artifact changed") from exc
-        if identity != self._graphs[path]:
-            raise ValueError(f"{path.name}: graph artifact changed")
-
-    @classmethod
-    def _verify_file(cls, path: Path, fingerprint: Fingerprint) -> tuple[int, int, int, int]:
-        before = cls._file_identity(path)
-        if before[2] != fingerprint.size_bytes:
-            raise ValueError(f"{path.name}: artifact size mismatch")
-        with path.open("rb") as stream:
-            digest = hashlib.file_digest(stream, "sha256").hexdigest()
-        if cls._file_identity(path) != before:
-            raise ValueError(f"{path.name}: graph artifact changed during verification")
-        if digest != fingerprint.sha256:
-            raise ValueError(f"{path.name}: full SHA-256 mismatch")
-        return before
 
     @property
     def buffer_bytes(self) -> int:
