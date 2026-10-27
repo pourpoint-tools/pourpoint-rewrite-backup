@@ -26,11 +26,10 @@ when selecting content for a subsequent Pourpoint release.
 Pourpoint pushes and pull requests check the combined pinned build without
 publishing. HFX checks call the same script against their proposed source revision.
 Private cross-repository access requires dedicated read-only credentials:
-`HFX_DOCS_READ_TOKEN` in Pourpoint reads HFX; `POURPOINT_DOCS_READ_TOKEN` in HFX reads
-Pourpoint. `DOCS_SITE_WRITE_TOKEN` in Pourpoint writes only the private generated-site
-repository. These interfaces require repository-scoped credentials, not broad account tokens.
-Credential provisioning is pending maintainer authorization; cross-repository CI
-and release writes are not operational until access is configured.
+`HFX_DOCS_READ_KEY` in Pourpoint reads HFX; `POURPOINT_DOCS_READ_KEY` in HFX reads
+Pourpoint. `DOCS_SITE_WRITE_KEY` in Pourpoint writes only the private generated-site
+repository. Each is a dedicated SSH deploy key scoped to its target repository;
+read keys cannot write. No broad account token is used.
 No secrets belong in documentation sources or generated output.
 
 ## Release output and future public publication

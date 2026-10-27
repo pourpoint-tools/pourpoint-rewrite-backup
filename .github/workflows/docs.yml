@@ -26,7 +26,7 @@ jobs:
           repository: pourpoint-tools/hfx
           ref: ${{ steps.hfx.outputs.revision }}
           path: .worktrees/hfx-docs
-          token: ${{ secrets.HFX_DOCS_READ_TOKEN }}
+          ssh-key: ${{ secrets.HFX_DOCS_READ_KEY }}
           persist-credentials: false
       - uses: astral-sh/setup-uv@v6
         with:
@@ -44,7 +44,7 @@ jobs:
         with:
           repository: pourpoint-tools/pourpoint-tools.github.io
           path: .worktrees/generated-site
-          token: ${{ secrets.DOCS_SITE_WRITE_TOKEN }}
+          ssh-key: ${{ secrets.DOCS_SITE_WRITE_KEY }}
       - name: Retain release output; publish only after explicit approval
         if: github.event_name == 'release'
         env:
