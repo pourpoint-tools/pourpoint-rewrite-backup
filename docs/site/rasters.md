@@ -59,10 +59,8 @@ failures do not choose a coarse-watershed fallback.
 
 ## Lifetime and transport
 
-For raster-only access without even catchment metadata acquisition:
-
-
-Close the reader before its Source. Create and use each reader on one thread.
+Direct `RasterReader` access avoids catchment metadata acquisition.
+Close the reader before its `Source` during direct access. Create and use each reader on one thread.
 One reader allows one active call. Future concurrent workers must create private
 Sources and reader pairs in their own threads, not share ordinary GDAL handles.
 Closing releases handles, not every process-wide GDAL cache. GDAL owns block-cache
