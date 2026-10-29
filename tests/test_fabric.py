@@ -36,3 +36,52 @@ def test_materialized_rows_and_relationships_survive_close(tmp_path: Path) -> No
     assert network.relationships["upstream_ids"].to_pylist() == [[10]]
     with HydroFabric(source, cache_dir=tmp_path / "cache", offline=True) as reopened:
         assert reopened.records("catchments", [20, 10, 20]).equals(basins[0].table, check_metadata=True)
+
+
+def test_local_associations_preserve_plural_singleton_and_known_empty(tmp_path: Path) -> None:
+    import pyarrow as pa
+    from shapely.geometry import box
+    from spatial_fixture import make_spatial_bundle
+
+    from pourpoint import HydroFabric
+
+    source = make_spatial_bundle(tmp_path / "source", local_associations=True)
+    with HydroFabric(source) as fabric:
+        records = fabric.records("rivers", [30, 10, 20])
+        assert "local_catchment_id" not in records.column_names
+        assert records["local_catchment_coverage"].to_pylist() == ["supplied"] * 3
+        relations = fabric.relationships("rivers", [30, 10, 20], columns=["id", "local_catchment_ids"])
+        assert relations.to_pylist() == [
+            {"id": 30, "local_catchment_ids": []},
+            {"id": 10, "local_catchment_ids": [10, 20]},
+            {"id": 20, "local_catchment_ids": [30]},
+        ]
+        network = fabric.river_network([30, 10, 20])
+        assert network.relationships["local_catchment_ids"].to_pylist() == [[], [10, 20], [30]]
+        assert [river.id for river in network.rivers] == [30, 10, 20]
+        assert [river.attributes["local_catchment_coverage"] for river in network.rivers] == ["supplied"] * 3
+        assert [river.attributes["streamID"] for river in network.rivers] == [
+            5_000_000_030,
+            5_000_000_010,
+            5_000_000_020,
+        ]
+        assert all(river.attributes.scalar("streamID").type == pa.int64() for river in network.rivers)
+        assert fabric.subbasins(relations["local_catchment_ids"][0].as_py()) == []
+        singleton = fabric.subbasins(relations["local_catchment_ids"][2].as_py())
+        assert [basin.id for basin in singleton] == [30]
+        assert singleton[0].attributes["streamID"] == 5_000_000_020
+        basins = fabric.subbasins(relations["local_catchment_ids"][1].as_py())
+        assert [basin.id for basin in basins] == [10, 20]
+        assert [basin.attributes["streamID"] for basin in basins] == [5_000_000_010, 5_000_000_010]
+        assert all(basin.attributes.scalar("streamID").type == pa.int64() for basin in basins)
+        assert [basin.wkb for basin in basins] == [box(1, 1, 1.25, 1.25).wkb, box(2, 1, 2.25, 1.25).wkb]
+        assert [basin.attributes["source_value"] for basin in basins] == [None, 2000]
+        reverse = fabric.relationships("catchments", [20, 30, 10], columns=["id", "local_river_ids"])
+        assert reverse.to_pylist() == [
+            {"id": 20, "local_river_ids": [10]},
+            {"id": 30, "local_river_ids": [20]},
+            {"id": 10, "local_river_ids": [10]},
+        ]
+        linked = fabric.records("rivers", [ids[0] for ids in reverse["local_river_ids"].to_pylist()])
+        assert linked["id"].to_pylist() == [10, 20, 10]
+        assert linked["source_value"].to_pylist() == [None, 2000, None]
