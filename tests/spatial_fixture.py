@@ -9,7 +9,7 @@ import pyarrow.parquet as pq
 from shapely.geometry import LineString, Point, box
 
 
-def make_spatial_bundle(path: Path) -> Path:
+def make_spatial_bundle(path: Path, *, local_associations: bool = False) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     manifest = {
         "format_version": "0.4.0",
@@ -58,6 +58,16 @@ def make_spatial_bundle(path: Path) -> Path:
             ],
             schema=schema,
         )
+        if local_associations and domain in ("rivers", "catchments"):
+            # Two independent polygons share a native association key above int32.
+            stream_ids = (
+                {10: 5_000_000_010, 20: 5_000_000_010, 30: 5_000_000_020, 40: 5_000_000_040}
+                if domain == "catchments"
+                else {i: 5_000_000_000 + i for i in ids}
+            )
+            table = table.append_column("streamID", pa.array([stream_ids[i] for i in ids], type=pa.int64()))
+            if domain == "rivers":
+                table = table.append_column("local_catchment_coverage", pa.array(["supplied"] * 4))
         data = f"{domain}.parquet"
         pq.write_table(table, path / data, row_group_size=2)
         digest = hashlib.sha256((path / data).read_bytes()).hexdigest()
@@ -136,6 +146,22 @@ def make_spatial_bundle(path: Path) -> Path:
         write_ipc(artifact, table)
         family = manifest["families"][target]
         declaration["feature_artifacts"][target] = {"data": family["data"], "data_sha256": family["data_sha256"]}
+    if local_associations:
+        associations = {
+            "rivers": ("catchments", "local_catchment_ids", [[10, 20], [30], [], [40]]),
+            "catchments": ("rivers", "local_river_ids", [[10], [10], [20], [40]]),
+        }
+        for domain, (target, column, values) in associations.items():
+            declaration = manifest["relationships"][domain]
+            artifact = path / declaration["data"]
+            with pa.memory_map(str(artifact), "r") as stream:
+                table = pa.ipc.open_file(stream).read_all()
+            list_type = pa.list_(pa.field("item", pa.int64(), nullable=False))
+            table = table.append_column(pa.field(column, list_type, False), pa.array(values, type=list_type))
+            write_ipc(artifact, table)
+            declaration["columns"][column] = {"source_domain": domain, "target_domain": target}
+            family = manifest["families"][target]
+            declaration["feature_artifacts"][target] = {"data": family["data"], "data_sha256": family["data_sha256"]}
     for artifact in path.iterdir():
         raw = artifact.read_bytes()
         manifest["artifacts"][artifact.name] = {
