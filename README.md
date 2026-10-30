@@ -1,5 +1,9 @@
 # Pourpoint
 
+[![PyPI version](https://img.shields.io/pypi/v/pourpoint)](https://pypi.org/project/pourpoint/)
+[![Python ≥3.13](https://img.shields.io/badge/python-%E2%89%A53.13-blue)](https://pypi.org/project/pourpoint/)
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://pourpoint-tools.github.io/)
+
 Pourpoint is a Python package for delineating watersheds from existing hydrofabrics.
 A watershed is the area of land that drains to a particular outlet. A hydrofabric
 represents that landscape as connected sub-basins and rivers, sometimes accompanied
@@ -72,12 +76,7 @@ with pp.HydroFabric(dataset) as fabric:
     bundle.write("rhine-basel")
 ```
 
-Whole-sub-basin selection includes the terminal sub-basin and every unit draining
-into it. Refinement uses the supplied flow directions to trace the cells draining
-to an outlet near our point, within that selected area. The example uses the default
-catchment and river level 1 and a 3 × 3-cell outlet search window. The
-[refinement guide](https://pourpoint-tools.github.io/concepts/#refining-a-point-watershed)
-explains the assumption that the vector and raster drainage representations agree.
+The code above generates the watershed shown below.
 
 Open `rhine-basel/watershed.qgz` in QGIS. The folder contains the vector layers and
 native raster subsets alongside the project. Keep the folder together when moving
@@ -85,9 +84,7 @@ or sharing it, and choose a new output folder for each export.
 
 ![The raster-refined Rhine watershed above Basel in pale purple, with blue rivers and a red outlet point, over Switzerland and neighbouring country boundaries.](assets/rhine-basel.png)
 
-The map was drawn from the exported bundle. The refined watershed covers approximately
-35,815 km². River widths use an order derived from the saved connectivity for display.
-Country boundaries come from [Natural Earth](https://www.naturalearthdata.com/).
+*Boundaries: [Natural Earth](https://www.naturalearthdata.com/). Their depiction implies no position on territorial status.*
 
 ### Use the combined workflow
 
