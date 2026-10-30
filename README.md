@@ -132,7 +132,7 @@ workflows illustrated here.
 
 GRIT is the work of Michel Wortmann, Louise Slater, Laurence Hawker, Yinxue Liu and
 Jeffrey Neal. We thank them for making their hydrography available, and
-**Alden Keefe Samson at Upstream Tech for hosting GRIT** for public access.
+**Alden Keefe Sampson at Upstream Tech for hosting GRIT** for public access.
 See the [GRIT paper](https://doi.org/10.1029/2024WR038308) and
 [data publication](https://zenodo.org/records/17435232) for citation and source details.
 
