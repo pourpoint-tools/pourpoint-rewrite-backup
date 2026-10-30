@@ -1,0 +1,252 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 420" width="100%" height="100%" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <!--Repaired on a common 6-unit grid. All 36 polygons partition the 324x324 extent exactly, without gaps, overlaps, or invalid rings. All panels reuse the same geometry.--><defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .panel-title { font-family: Arial, sans-serif; font-size: 23.418px; font-weight: 400; fill: #000000; text-anchor: middle; }
+      .subbasin { fill: #efefef; stroke: #b4b4b4; stroke-width: 1; stroke-linejoin: miter; vector-effect: non-scaling-stroke; }
+      .selected { fill: #dceeff; stroke: #1a1a1a; stroke-width: 1.35; stroke-linejoin: miter; vector-effect: non-scaling-stroke; }
+      .frame { fill: none; stroke: #b4b4b4; stroke-width: 1; }
+      .river-hw { fill: none; stroke: #0072d6; stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; }
+      .river-mid { fill: none; stroke: #0072d6; stroke-width: 1.50; stroke-linecap: round; stroke-linejoin: round; }
+      .river-main { fill: none; stroke: #0072d6; stroke-width: 1.90; stroke-linecap: round; stroke-linejoin: round; }
+      /* White knockout strokes, following the point-refinement SVG. */
+      .river-halo-hw { fill: none; stroke: #ffffff; stroke-width: 2.45; stroke-linecap: round; stroke-linejoin: round; }
+      .river-halo-mid { fill: none; stroke: #ffffff; stroke-width: 2.95; stroke-linecap: round; stroke-linejoin: round; }
+      .river-halo-main { fill: none; stroke: #ffffff; stroke-width: 3.65; stroke-linecap: round; stroke-linejoin: round; }
+      .flow-arrow { fill: none; stroke: #0072d6; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
+      .pour-point { fill: #e11d24; stroke: #ffffff; stroke-width: 1.5; }
+      .point-label { font-size: 14px; font-weight: 700; font-style: italic; fill: #1a1a1a; }
+      .point-halo { font-size: 14px; font-weight: 700; font-style: italic; fill: none; stroke: #ffffff; stroke-width: 3.5; stroke-linejoin: round; }
+    </style>
+
+    <!-- ========================================== -->
+    <!-- 36 SUB-BASIN POLYGONS (324x324 Grid, step=6) -->
+    <!-- Fully gap-free, perfectly tiling 324x324 box -->
+    <!-- ========================================== -->
+
+    <!-- Row 1 (Top: NW to NE) -->
+    <path id="sb-1" d="M 54,0 H 0 V 54 H 18 V 48 H 36 V 54 H 60 V 18 H 54 Z"/>
+    <path id="sb-2" d="M 54,0 V 18 H 60 V 48 H 78 V 54 H 96 V 48 H 108 V 36 H 114 V 18 H 108 V 0 Z"/>
+    <path id="sb-3" d="M 114,18 V 36 H 108 V 48 H 126 V 54 H 144 V 48 H 162 V 36 H 156 V 18 H 162 V 0 H 108 V 18 Z"/>
+    <path id="sb-4" d="M 162,0 V 18 H 156 V 36 H 162 V 48 H 180 V 54 H 198 V 48 H 204 V 36 H 222 V 18 H 216 V 0 Z"/>
+    <path id="sb-5" d="M 216,0 V 18 H 222 V 36 H 204 V 48 H 234 V 54 H 252 V 48 H 270 V 36 H 264 V 18 H 270 V 0 Z"/>
+    <path id="sb-6" d="M 264,18 V 36 H 270 V 54 H 288 V 48 H 306 V 54 H 324 V 0 H 270 V 18 Z"/>
+
+    <!-- Row 2 (Upper-Mid: West to East, contains selected U1 & U2) -->
+    <path id="sb-7" d="M 18,54 H 0 V 108 H 30 V 96 H 48 V 90 H 60 V 72 H 54 V 54 H 36 V 48 H 18 Z"/>
+    <path id="sb-8" d="M 54,54 V 72 H 60 V 108 H 78 V 96 H 90 V 78 H 96 V 60 H 108 V 48 H 96 V 54 H 78 V 48 H 60 V 54 Z"/>
+    <!-- U1 (Selected NW headwater) -->
+    <path id="sb-U1" d="M 96,60 V 78 H 90 V 96 H 120 V 108 H 144 V 96 H 162 V 78 H 156 V 60 H 162 V 48 H 144 V 54 H 126 V 48 H 108 V 60 Z"/>
+    <!-- U2 (Selected NE headwater) -->
+    <path id="sb-U2" d="M 156,60 V 78 H 162 V 96 H 180 V 108 H 204 V 96 H 222 V 78 H 216 V 60 H 222 V 48 H 198 V 54 H 180 V 48 H 162 V 60 Z"/>
+    <path id="sb-11" d="M 216,60 V 78 H 222 V 96 H 234 V 108 H 252 V 96 H 270 V 78 H 276 V 60 H 270 V 48 H 252 V 54 H 234 V 48 H 222 V 60 Z"/>
+    <path id="sb-12" d="M 270,60 H 276 V 78 H 270 V 96 H 300 V 108 H 324 V 54 H 306 V 48 H 288 V 54 H 270 Z"/>
+
+    <!-- Row 3 (Mid-Upper: West to East, contains selected U3 & U4) -->
+    <path id="sb-13" d="M 0,108 V 156 H 30 V 162 H 54 V 144 H 48 V 126 H 54 V 108 H 60 V 90 H 48 V 96 H 30 V 108 Z"/>
+    <path id="sb-14" d="M 54,108 V 126 H 48 V 144 H 54 V 162 H 78 V 150 H 96 V 132 H 90 V 114 H 96 V 96 H 78 V 108 Z"/>
+    <!-- U3 (Selected Mid-West tributary) -->
+    <path id="sb-U3" d="M 90,114 V 132 H 96 V 150 H 108 V 156 H 144 V 132 H 156 V 114 H 162 V 96 H 144 V 108 H 120 V 96 H 96 V 114 Z"/>
+    <!-- U4 (Selected Mid-East main stem) -->
+    <path id="sb-U4" d="M 156,114 V 132 H 144 V 150 H 180 V 156 H 210 V 132 H 228 V 114 H 222 V 96 H 204 V 108 H 180 V 96 H 162 V 114 Z"/>
+    <path id="sb-17" d="M 228,114 V 132 H 210 V 150 H 234 V 156 H 270 V 132 H 276 V 114 H 270 V 96 H 252 V 108 H 234 V 96 H 222 V 114 Z"/>
+    <path id="sb-18" d="M 276,114 V 132 H 270 V 150 H 300 V 162 H 324 V 108 H 300 V 96 H 270 V 114 Z"/>
+
+    <!-- Row 4 (Mid-Lower: West to East, contains TERMINAL sub-basin T) -->
+    <path id="sb-19" d="M 0,156 V 216 H 18 V 210 H 36 V 216 H 54 V 198 H 48 V 180 H 54 V 162 H 30 V 156 Z"/>
+    <path id="sb-20" d="M 54,162 V 180 H 48 V 198 H 54 V 210 H 72 V 216 H 96 V 210 H 108 V 186 H 96 V 168 H 108 V 150 H 78 V 162 Z"/>
+    <!-- T (Selected Terminal Sub-basin containing p) -->
+    <path id="sb-T" d="M 96,168 V 186 H 108 V 210 H 126 V 216 H 144 V 222 H 174 V 216 H 192 V 198 H 198 V 180 H 204 V 156 H 180 V 150 H 144 V 156 H 108 V 168 Z"/>
+    <path id="sb-22" d="M 204,156 V 180 H 198 V 198 H 192 V 216 H 216 V 210 H 234 V 186 H 228 V 168 H 234 V 150 H 210 V 156 Z"/>
+    <path id="sb-23" d="M 234,168 H 228 V 186 H 234 V 210 H 240 V 216 H 276 V 186 H 270 V 168 H 276 V 150 H 270 V 156 H 234 Z"/>
+    <path id="sb-24" d="M 276,150 V 168 H 270 V 186 H 276 V 216 H 324 V 162 H 300 V 150 Z"/>
+
+    <!-- Row 5 (Lower-Mid: West to East) -->
+    <path id="sb-25" d="M 18,216 H 0 V 264 H 30 V 270 H 54 V 264 H 60 V 234 H 54 V 216 H 36 V 210 H 18 Z"/>
+    <path id="sb-26" d="M 72,210 H 54 V 234 H 60 V 264 H 78 V 270 H 108 V 252 H 96 V 234 H 108 V 210 H 96 V 216 H 72 Z"/>
+    <path id="sb-27" d="M 108,210 V 234 H 96 V 252 H 108 V 264 H 132 V 270 H 162 V 258 H 156 V 240 H 162 V 222 H 144 V 216 H 126 V 210 Z"/>
+    <path id="sb-28" d="M 162,222 V 240 H 156 V 258 H 162 V 264 H 192 V 270 H 210 V 252 H 204 V 234 H 210 V 216 H 174 V 222 Z"/>
+    <path id="sb-29" d="M 210,216 V 234 H 204 V 252 H 210 V 264 H 240 V 270 H 270 V 252 H 258 V 234 H 270 V 216 H 240 V 210 H 216 V 216 Z"/>
+    <path id="sb-30" d="M 270,216 V 234 H 258 V 252 H 270 V 264 H 300 V 270 H 324 V 216 Z"/>
+
+    <!-- Row 6 (Bottom: SW to SE) -->
+    <path id="sb-31" d="M 0,264 V 324 H 54 V 306 H 48 V 288 H 54 V 270 H 30 V 264 Z"/>
+    <path id="sb-32" d="M 54,264 V 288 H 48 V 306 H 54 V 324 H 96 V 306 H 108 V 288 H 96 V 270 H 78 V 264 Z"/>
+    <path id="sb-33" d="M 96,270 V 288 H 108 V 306 H 96 V 324 H 162 V 306 H 156 V 288 H 162 V 270 H 132 V 264 H 108 V 270 Z"/>
+    <path id="sb-34" d="M 162,264 V 288 H 156 V 306 H 162 V 324 H 210 V 306 H 204 V 288 H 210 V 270 H 192 V 264 Z"/>
+    <path id="sb-35" d="M 204,288 V 306 H 210 V 324 H 258 V 306 H 270 V 288 H 258 V 270 H 240 V 264 H 210 V 288 Z"/>
+    <path id="sb-36" d="M 258,270 V 288 H 270 V 306 H 258 V 324 H 324 V 270 H 300 V 264 H 270 V 270 Z"/>
+
+    <!-- Grouping of all 36 unselected sub-basins -->
+    <g id="all-subbasins-gray">
+      <use href="#sb-1" class="subbasin"/>
+      <use href="#sb-2" class="subbasin"/>
+      <use href="#sb-3" class="subbasin"/>
+      <use href="#sb-4" class="subbasin"/>
+      <use href="#sb-5" class="subbasin"/>
+      <use href="#sb-6" class="subbasin"/>
+      <use href="#sb-7" class="subbasin"/>
+      <use href="#sb-8" class="subbasin"/>
+      <use href="#sb-U1" class="subbasin"/>
+      <use href="#sb-U2" class="subbasin"/>
+      <use href="#sb-11" class="subbasin"/>
+      <use href="#sb-12" class="subbasin"/>
+      <use href="#sb-13" class="subbasin"/>
+      <use href="#sb-14" class="subbasin"/>
+      <use href="#sb-U3" class="subbasin"/>
+      <use href="#sb-U4" class="subbasin"/>
+      <use href="#sb-17" class="subbasin"/>
+      <use href="#sb-18" class="subbasin"/>
+      <use href="#sb-19" class="subbasin"/>
+      <use href="#sb-20" class="subbasin"/>
+      <use href="#sb-T" class="subbasin"/>
+      <use href="#sb-22" class="subbasin"/>
+      <use href="#sb-23" class="subbasin"/>
+      <use href="#sb-24" class="subbasin"/>
+      <use href="#sb-25" class="subbasin"/>
+      <use href="#sb-26" class="subbasin"/>
+      <use href="#sb-27" class="subbasin"/>
+      <use href="#sb-28" class="subbasin"/>
+      <use href="#sb-29" class="subbasin"/>
+      <use href="#sb-30" class="subbasin"/>
+      <use href="#sb-31" class="subbasin"/>
+      <use href="#sb-32" class="subbasin"/>
+      <use href="#sb-33" class="subbasin"/>
+      <use href="#sb-34" class="subbasin"/>
+      <use href="#sb-35" class="subbasin"/>
+      <use href="#sb-36" class="subbasin"/>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- HYDROLOGICALLY CONSISTENT RIVER NETWORK    -->
+    <!-- ========================================== -->
+    <g id="river-network">
+      <!--Smooth cubic Bézier tributaries with a white knockout underlay.--><g id="river-white-knockouts"><use href="#river-01" class="river-halo-hw"/><use href="#river-02" class="river-halo-mid"/><use href="#river-03" class="river-halo-main"/><use href="#river-04" class="river-halo-hw"/><use href="#river-05" class="river-halo-hw"/><use href="#river-06" class="river-halo-hw"/><use href="#river-07" class="river-halo-hw"/><use href="#river-08" class="river-halo-hw"/><use href="#river-09" class="river-halo-mid"/><use href="#river-10" class="river-halo-hw"/><use href="#river-11" class="river-halo-hw"/><use href="#river-12" class="river-halo-hw"/><use href="#river-13" class="river-halo-hw"/><use href="#river-14" class="river-halo-hw"/><use href="#river-15" class="river-halo-hw"/><use href="#river-16" class="river-halo-hw"/><use href="#river-17" class="river-halo-hw"/><use href="#river-18" class="river-halo-hw"/><use href="#river-19" class="river-halo-hw"/><use href="#river-20" class="river-halo-hw"/><use href="#river-21" class="river-halo-hw"/><use href="#river-22" class="river-halo-hw"/><use href="#river-23" class="river-halo-hw"/><use href="#river-24" class="river-halo-mid"/><use href="#river-25" class="river-halo-main"/><use href="#river-26" class="river-halo-hw"/><use href="#river-27" class="river-halo-hw"/><use href="#river-28" class="river-halo-hw"/><use href="#river-29" class="river-halo-hw"/><use href="#river-30" class="river-halo-hw"/><use href="#river-31" class="river-halo-hw"/><use href="#river-32" class="river-halo-hw"/><use href="#river-33" class="river-halo-hw"/><use href="#river-34" class="river-halo-mid"/><use href="#river-35" class="river-halo-main"/><use href="#river-36" class="river-halo-hw"/><use href="#river-37" class="river-halo-hw"/><use href="#river-38" class="river-halo-hw"/><use href="#river-39" class="river-halo-hw"/><use href="#river-40" class="river-halo-hw"/><use href="#river-41" class="river-halo-hw"/><use href="#river-42" class="river-halo-hw"/></g><g id="river-blue-centerlines"><path class="river-hw" d="M 174.00,54.00 C 177.64,60.37 183.27,66.81 186.00,75.00 C 188.73,83.19 190.18,97.99 192.00,108.00" id="river-01"/>
+      <path class="river-mid" d="M 192.00,108.00 C 191.09,113.46 191.12,120.54 189.00,126.00 C 186.88,131.46 182.09,140.36 178.00,144.00 C 173.91,147.64 165.94,144.54 162.00,150.00 C 158.06,155.46 155.03,170.90 152.00,180.00" id="river-02"/>
+      <path class="river-main" d="M 152.00,180.00 C 152.61,187.28 152.18,197.63 154.00,204.00 C 155.82,210.37 160.66,215.63 164.00,222.00 C 167.34,228.37 174.48,239.63 176.00,246.00 C 177.52,252.37 173.09,256.72 174.00,264.00 C 174.91,271.28 180.18,284.90 182.00,294.00 C 183.82,303.10 184.79,314.90 186.00,324.00" id="river-03"/>
+
+      <path class="river-hw" d="M 210.00,60.00 C 206.36,66.67 200.73,74.72 198.00,82.00 C 195.27,89.28 193.82,100.11 192.00,108.00" id="river-04"/>
+      <path class="river-hw" d="M 216.00,120.00 C 211.75,124.55 206.09,134.09 202.00,135.00 C 197.91,135.91 192.94,128.73 189.00,126.00" id="river-05"/>
+
+      <path class="river-hw" d="M 116.00,54.00 C 119.64,60.37 123.75,69.54 128.00,75.00 C 132.25,80.46 138.84,86.81 144.00,90.00 C 149.16,93.19 156.84,92.36 162.00,96.00 C 167.16,99.64 173.91,109.45 178.00,114.00 C 182.09,118.55 185.66,122.36 189.00,126.00" id="river-06"/>
+      <path class="river-hw" d="M 144.00,54.00 C 141.57,59.46 138.43,68.81 136.00,72.00 C 133.57,75.19 130.43,74.09 128.00,75.00" id="river-07"/>
+
+      <path class="river-hw" d="M 108.00,110.00 C 110.43,116.07 113.57,124.54 116.00,130.00 C 118.43,135.46 121.27,141.15 124.00,146.00 C 126.73,150.85 130.97,157.15 134.00,162.00" id="river-08"/>
+      <path class="river-mid" d="M 134.00,162.00 C 137.03,165.03 141.27,169.27 144.00,172.00 C 146.73,174.73 149.57,177.57 152.00,180.00" id="river-09"/>
+      <path class="river-hw" d="M 140.00,112.00 C 136.36,117.46 130.43,124.84 128.00,130.00 C 125.57,135.16 125.21,141.15 124.00,146.00" id="river-10"/>
+
+      <path class="river-hw" d="M 190.00,170.00 C 184.54,174.55 177.46,179.84 172.00,185.00 C 166.54,190.16 159.46,198.24 154.00,204.00" id="river-11"/>
+      <path class="river-hw" d="M 116.00,180.00 C 121.46,183.64 128.24,188.36 134.00,192.00 C 139.76,195.64 147.93,200.36 154.00,204.00" id="river-12"/>
+
+      <path class="river-hw" d="M 134.00,36.00 C 133.39,30.54 132.91,23.46 132.00,18.00 C 131.09,12.54 129.21,5.46 128.00,0.00" id="river-13"/>
+      <path class="river-hw" d="M 150.00,24.00 C 144.54,22.18 137.46,19.82 132.00,18.00" id="river-14"/>
+      <path class="river-hw" d="M 186.00,36.00 C 187.82,30.54 190.48,23.46 192.00,18.00 C 193.52,12.54 194.79,5.46 196.00,0.00" id="river-15"/>
+      <path class="river-hw" d="M 206.00,24.00 C 201.75,22.18 196.25,19.82 192.00,18.00" id="river-16"/>
+
+      <path class="river-hw" d="M 74.00,174.00 C 76.43,180.67 80.94,189.63 82.00,196.00 C 83.06,202.37 80.39,209.63 81.00,216.00 C 81.61,222.37 83.72,233.45 86.00,238.00 C 88.28,242.55 89.63,244.79 96.00,246.00 C 102.37,247.21 119.51,245.09 128.00,246.00 C 136.49,246.91 144.72,252.00 152.00,252.00 C 159.28,252.00 168.72,247.82 176.00,246.00" id="river-17"/>
+      <path class="river-hw" d="M 124.00,228.00 C 126.43,233.46 129.57,240.54 132.00,246.00" id="river-18"/>
+      <path class="river-hw" d="M 124.00,276.00 C 130.07,281.46 138.24,290.97 144.00,294.00 C 149.76,297.03 156.24,296.00 162.00,296.00 C 167.76,296.00 175.93,294.61 182.00,294.00" id="river-19"/>
+      <path class="river-hw" d="M 122.00,312.00 C 128.67,306.54 137.33,299.46 144.00,294.00" id="river-20"/>
+
+      <path class="river-hw" d="M 214.00,174.00 C 212.79,181.28 211.82,191.63 210.00,198.00 C 208.18,204.37 204.43,210.24 202.00,216.00 C 199.57,221.76 197.94,231.45 194.00,236.00 C 190.06,240.55 181.46,242.97 176.00,246.00" id="river-21"/>
+      <path class="river-hw" d="M 236.00,228.00 C 231.75,232.85 227.16,238.54 222.00,244.00 C 216.84,249.46 206.25,259.15 202.00,264.00 C 197.75,268.85 197.03,271.45 194.00,276.00 C 190.97,280.55 185.64,288.54 182.00,294.00" id="river-22"/>
+
+      <path class="river-hw" d="M 26.00,12.00 C 28.43,19.28 33.70,30.54 34.00,36.00 C 34.30,41.46 28.61,41.63 28.00,48.00 C 27.39,54.37 31.52,68.90 30.00,78.00 C 28.48,87.10 21.64,98.90 18.00,108.00" id="river-23"/>
+      <path class="river-mid" d="M 18.00,108.00 C 19.82,116.19 21.27,126.81 24.00,135.00 C 26.73,143.19 35.09,153.81 36.00,162.00 C 36.91,170.19 31.52,180.81 30.00,189.00 C 28.48,197.19 25.70,207.35 26.00,216.00 C 26.30,224.65 30.48,237.81 32.00,246.00 C 33.52,254.19 34.79,262.72 36.00,270.00" id="river-24"/>
+      <path class="river-main" d="M 36.00,270.00 C 34.79,278.49 33.21,289.81 32.00,298.00 C 30.79,306.19 29.21,316.11 28.00,324.00" id="river-25"/>
+      <path class="river-hw" d="M 80.00,12.00 C 78.79,19.28 76.30,27.81 76.00,36.00 C 75.70,44.19 78.61,55.08 78.00,66.00 C 77.39,76.92 73.21,97.53 72.00,108.00 C 70.79,118.47 71.82,126.81 70.00,135.00 C 68.18,143.19 63.94,156.09 60.00,162.00 C 56.06,167.91 48.55,169.91 44.00,174.00 C 39.45,178.09 34.25,184.45 30.00,189.00" id="river-26"/>
+      <path class="river-hw" d="M 98.00,24.00 C 91.33,27.64 82.67,32.36 76.00,36.00" id="river-27"/>
+      <path class="river-hw" d="M 48.00,72.00 C 42.54,73.82 35.46,76.18 30.00,78.00" id="river-28"/>
+      <path class="river-hw" d="M 12.00,132.00 C 15.64,132.91 20.36,134.09 24.00,135.00" id="river-29"/>
+      <path class="river-hw" d="M 12.00,236.00 C 18.07,239.03 25.93,242.97 32.00,246.00" id="river-30"/>
+      <path class="river-hw" d="M 74.00,276.00 C 74.61,282.67 76.30,290.72 76.00,298.00 C 75.70,305.28 73.21,316.11 72.00,324.00" id="river-31"/>
+      <path class="river-hw" d="M 90.00,288.00 C 85.75,291.03 80.25,294.97 76.00,298.00" id="river-32"/>
+
+      <path class="river-hw" d="M 246.00,12.00 C 246.61,19.28 248.30,29.63 248.00,36.00 C 247.70,42.37 243.70,47.02 244.00,54.00 C 244.30,60.98 250.00,73.81 250.00,82.00 C 250.00,90.19 245.82,100.11 244.00,108.00" id="river-33"/>
+      <path class="river-mid" d="M 244.00,108.00 C 246.43,116.19 249.57,126.81 252.00,135.00 C 254.43,143.19 259.70,153.35 260.00,162.00 C 260.30,170.65 255.21,183.81 254.00,192.00 C 252.79,200.19 250.18,207.81 252.00,216.00 C 253.82,224.19 261.45,238.72 266.00,246.00 C 270.55,253.28 277.15,258.54 282.00,264.00" id="river-34"/>
+      <path class="river-main" d="M 282.00,264.00 C 284.43,273.10 287.88,284.90 290.00,294.00 C 292.12,303.10 294.18,314.90 296.00,324.00" id="river-35"/>
+      <path class="river-hw" d="M 302.00,12.00 C 300.18,19.28 296.61,29.63 296.00,36.00 C 295.39,42.37 297.09,47.02 298.00,54.00 C 298.91,60.98 300.48,73.81 302.00,82.00 C 303.52,90.19 307.70,99.96 308.00,108.00 C 308.30,116.04 307.34,128.63 304.00,135.00 C 300.66,141.37 292.67,145.91 286.00,150.00 C 279.33,154.09 267.89,158.36 260.00,162.00" id="river-36"/>
+      <path class="river-hw" d="M 312.00,72.00 C 308.97,75.03 305.03,78.97 302.00,82.00" id="river-37"/>
+      <path class="river-hw" d="M 308.00,180.00 C 304.97,187.28 299.82,198.54 298.00,204.00 C 296.18,209.46 296.61,210.54 296.00,216.00 C 295.39,221.46 296.12,232.72 294.00,240.00 C 291.88,247.28 285.64,256.72 282.00,264.00" id="river-38"/>
+      <path class="river-hw" d="M 314.00,232.00 C 307.93,234.43 300.07,237.57 294.00,240.00" id="river-39"/>
+      <path class="river-hw" d="M 242.00,276.00 C 241.39,283.28 240.61,292.72 240.00,300.00 C 239.39,307.28 238.61,316.72 238.00,324.00" id="river-40"/>
+      <path class="river-hw" d="M 254.00,294.00 C 249.75,295.82 244.25,298.18 240.00,300.00" id="river-41"/>
+      <path class="river-hw" d="M 312.00,284.00 C 305.33,287.03 296.67,290.97 290.00,294.00" id="river-42"/>
+
+      </g><g id="downstream-arrows"><path id="flow-direction-1" class="flow-arrow" d="M 182.19,132.89 L 180.93,140.71 L 188.10,137.34"/><path id="flow-direction-2" class="flow-arrow" d="M 154.12,213.11 L 161.02,216.99 L 160.34,209.10"/><path id="flow-direction-3" class="flow-arrow" d="M 180.34,307.49 L 184.81,314.02 L 187.69,306.65"/><path id="flow-direction-4" class="flow-arrow" d="M 27.43,303.52 L 30.02,311.01 L 34.75,304.66"/><path id="flow-direction-5" class="flow-arrow" d="M 289.31,308.76 L 294.25,314.95 L 296.58,307.38"/></g></g>
+
+    <!-- ========================================== -->
+    <!-- POUR POINT (p) INSIDE TERMINAL SUB-BASIN   -->
+    <!-- ========================================== -->
+    <g id="pour-point-marker">
+      <circle cx="153" cy="191" r="4.8" class="pour-point"/>
+      <text x="139" y="195" class="point-halo">p</text>
+      <text x="139" y="195" class="point-label">p</text>
+    </g>
+  </defs>
+
+  <!-- White Canvas Background -->
+  <rect width="1120" height="420" class="bg"/>
+
+  <!-- ========================================== -->
+  <!-- PANEL 1: 1. Point on the river             -->
+  <!-- ========================================== -->
+  <g transform="translate(26, 62)">
+    <text x="162" y="-18" class="panel-title">1. Point on the river</text>
+    
+    <!-- Base Gray Tiling -->
+    <use href="#all-subbasins-gray"/>
+    
+    <!-- Outer Frame -->
+    <rect width="324" height="324" class="frame"/>
+    
+    <!-- River Network & Pour Point -->
+    <use href="#river-network"/>
+    <use href="#pour-point-marker"/>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- PANEL 2: 2. Terminal sub-basin             -->
+  <!-- ========================================== -->
+  <g transform="translate(398, 62)">
+    <text x="162" y="-18" class="panel-title">2. Terminal sub-basin</text>
+    
+    <!-- Base Gray Tiling -->
+    <use href="#all-subbasins-gray"/>
+    
+    <!-- Highlighted Terminal Sub-basin -->
+    <use href="#sb-T" class="selected"/>
+    
+    <!-- Outer Frame -->
+    <rect width="324" height="324" class="frame"/>
+    
+    <!-- River Network & Pour Point -->
+    <use href="#river-network"/>
+    <use href="#pour-point-marker"/>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- PANEL 3: 3. Upstream sub-basins            -->
+  <!-- ========================================== -->
+  <g transform="translate(770, 62)">
+    <text x="162" y="-18" class="panel-title">3. Upstream sub-basins</text>
+    
+    <!-- Base Gray Tiling -->
+    <use href="#all-subbasins-gray"/>
+    
+    <!-- Highlighted 5 Contributing Sub-basins -->
+    <use href="#sb-U1" class="selected"/>
+    <use href="#sb-U2" class="selected"/>
+    <use href="#sb-U3" class="selected"/>
+    <use href="#sb-U4" class="selected"/>
+    <use href="#sb-T" class="selected"/>
+    
+    <!-- Outer Frame -->
+    <rect width="324" height="324" class="frame"/>
+    
+    <!-- River Network & Pour Point -->
+    <use href="#river-network"/>
+    <use href="#pour-point-marker"/>
+  </g>
+</svg>
