@@ -1,8 +1,11 @@
 # Building documentation
 
-Pourpoint owns `mkdocs.yml` and the shared assembly script. Only `docs/site/` in
-each source repository is staged; verification reports, planning and receipts are
-not published. HFX content is not maintained as a second copy here.
+Pourpoint owns `mkdocs.yml` and the shared assembly script. Each repository's
+`README.md` supplies its website overview. Detailed pages come from `docs/site/`;
+README images are copied from `assets/` only when referenced. Documentation links
+are adapted for the combined site; repository-only links point back to GitHub.
+Verification reports, planning and receipts are not published. HFX content is not
+maintained as a second copy here.
 
 Install the locked documentation tools with `uv sync --frozen --group docs`.
 Provide an authorized HFX checkout at the exact commit in `docs/hfx-revision`, then:

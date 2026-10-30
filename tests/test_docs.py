@@ -21,14 +21,52 @@ def test_stage_only_reader_sources(tmp_path: Path) -> None:
     hfx = tmp_path / "hfx"
     for root in (pourpoint, hfx):
         (root / "docs/site").mkdir(parents=True)
-        (root / "docs/site/index.md").write_text(root.name)
+        (root / "docs/site/index.md").write_text("old overview")
+        (root / "README.md").write_text(f"# {root.name}\n![Map](assets/map.png)\n[Licence](LICENSE)\n")
+        (root / "assets").mkdir()
+        (root / "assets/map.png").write_bytes(b"map image")
+        (root / "assets/unpublished.svg").write_text("not referenced")
+        (root / "docs/site/details.md").write_text("detailed documentation")
         (root / "docs/private.md").write_text("not published")
     destination = tmp_path / "staged"
     destination.mkdir()
     (destination / "stale.md").write_text("old output")
     stage_docs(pourpoint, hfx, destination)
-    assert {str(p.relative_to(destination)) for p in destination.rglob("*.md")} == {"index.md", "hfx/index.md"}
-    assert (destination / "hfx/index.md").read_text() == "hfx"
+    assert {str(p.relative_to(destination)) for p in destination.rglob("*.md")} == {
+        "index.md",
+        "details.md",
+        "hfx/index.md",
+        "hfx/details.md",
+    }
+    for name, staged in (("pourpoint", destination), ("hfx", destination / "hfx")):
+        assert (staged / "index.md").read_text() == (
+            f"# {name}\n![Map](assets/map.png)\n"
+            f"[Licence](https://github.com/pourpoint-tools/{name}/blob/main/LICENSE)\n"
+        )
+        assert (staged / "assets/map.png").read_bytes() == b"map image"
+        assert not (staged / "assets/unpublished.svg").exists()
+
+
+def test_readme_documentation_links_stay_in_the_built_site(tmp_path: Path) -> None:
+    from scripts.build_docs import stage_readme
+
+    repository = tmp_path / "source"
+    repository.mkdir()
+    destination = tmp_path / "staged"
+    destination.mkdir()
+    (repository / "README.md").write_text(
+        "[Concepts](https://pourpoint-tools.github.io/concepts/#refinement)\n"
+        "[Schemas](docs/site/vector-data.md#fields)\n"
+        "[Guide](docs/building.md)\n"
+        "[Paper](https://doi.org/example)\n"
+    )
+    stage_readme(repository, destination, "hfx")
+    assert (destination / "index.md").read_text() == (
+        "[Concepts](../concepts.md#refinement)\n"
+        "[Schemas](vector-data.md#fields)\n"
+        "[Guide](https://github.com/pourpoint-tools/hfx/blob/main/docs/building.md)\n"
+        "[Paper](https://doi.org/example)\n"
+    )
 
 
 @pytest.mark.parametrize(

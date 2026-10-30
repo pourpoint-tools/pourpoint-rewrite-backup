@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import re
 import shutil
 import subprocess
@@ -25,6 +26,33 @@ def stage_docs(pourpoint: Path, hfx: Path, destination: Path) -> None:
         shutil.rmtree(destination)
     shutil.copytree(pourpoint / "docs/site", destination)
     shutil.copytree(hfx / "docs/site", destination / "hfx")
+    stage_readme(pourpoint, destination, "pourpoint")
+    stage_readme(hfx, destination / "hfx", "hfx")
+
+
+def stage_readme(repository: Path, destination: Path, name: str) -> None:
+    """Stage the README's inline Markdown links and referenced repository assets."""
+
+    def replace_link(match: re.Match[str]) -> str:
+        target = match[2]
+        if target.startswith("assets/"):
+            asset = destination / target
+            asset.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(repository / target, asset)
+        elif target.startswith("https://pourpoint-tools.github.io/"):
+            page, marker, anchor = target.removeprefix("https://pourpoint-tools.github.io/").partition("#")
+            page = page.rstrip("/")
+            page = posixpath.join(page, "index.md") if page in ("", "hfx") else f"{page}.md"
+            target = posixpath.relpath(page, "hfx" if name == "hfx" else ".")
+            target += marker + anchor
+        elif target.startswith("docs/site/"):
+            target = target.removeprefix("docs/site/")
+        elif not target.startswith(("https://", "http://", "#")):
+            target = f"https://github.com/pourpoint-tools/{name}/blob/main/{target}"
+        return f"{match[1]}({target})"
+
+    readme = (repository / "README.md").read_text()
+    (destination / "index.md").write_text(re.sub(r"(!?\[[^\]\n]*\])\(([^)\s]+)\)", replace_link, readme))
 
 
 def revision(repository: Path) -> str:
